@@ -14,7 +14,8 @@ public class DatasourceConfig {
         return new HikariDataSource(config);
     }
 
-    @Bean HikariConfig hikariConfig(DatasourceProperties properties) {
+    @Bean
+    HikariConfig hikariConfig(DatasourceProperties properties) {
         HikariConfig config = new HikariConfig();
         config.setPassword(properties.getPassword());
         config.setUsername(properties.getUsername());
