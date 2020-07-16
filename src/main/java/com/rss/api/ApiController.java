@@ -6,6 +6,7 @@ import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 import com.rss.utils.DislogLogger;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URL;
@@ -25,5 +26,10 @@ public class ApiController {
             System.out.println(e);
         }
         return "ayyy"; 
+    }
+
+    @RequestMapping(value = "/subsription", method = RequestMethod.POST)
+    public String registerSubcscription() throws Exception {
+        return "ehh";
     }
 }

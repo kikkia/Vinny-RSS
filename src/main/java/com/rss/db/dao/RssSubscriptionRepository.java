@@ -1,8 +1,9 @@
 package com.rss.db.dao;
 
+import com.rss.db.model.RssChannelSubscriptionDTO;
 import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.utils.DislogLogger;
-import com.rss.utils.RssProvider;
+import com.rss.model.RssProvider;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -12,6 +13,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Repository
 public class RssSubscriptionRepository {
@@ -61,6 +64,28 @@ public class RssSubscriptionRepository {
             return null;
         }
         return dto;
+    }
+
+    public List<RssChannelSubscriptionDTO> getChannelSubsForSubcriptionId(int subscriptionId) throws SQLException {
+        String getQuery = "SELECT * FROM channel_rss_subscription s WHERE s.rss_subscription_id = ?";
+
+        List<RssChannelSubscriptionDTO> channels = new ArrayList<>();
+        try(Connection connection = dataSource.getConnection()) {
+            try(PreparedStatement statement = connection.prepareStatement(getQuery)) {
+                statement.setInt(1, subscriptionId);
+                try (ResultSet set = statement.executeQuery()){
+                    while (set.next()) {
+                        channels.add(new RssChannelSubscriptionDTO(
+                                set.getInt("id"),
+                                set.getInt("rss_subscription_id"),
+                                set.getString("channel_id"),
+                                set.getString("keyword")
+                        ));
+                    }
+                }
+            }
+        }
+        return channels;
     }
 
 }
