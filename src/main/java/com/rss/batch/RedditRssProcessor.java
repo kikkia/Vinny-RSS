@@ -57,18 +57,25 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
         List<RssChannelSubscriptionDTO> subs = repository.getChannelSubsForSubcriptionId(rssSubscriptionDTO.getId());
 
         for (JSONObject entry : toUpdate) {
-            List<String> channelIds = new ArrayList<>();
             for (RssChannelSubscriptionDTO channel : subs) {
                 String key = channel.getKeyword();
                 if (key != null) {
                     if (entry.getString("title").contains(key)) {
-                        channelIds.add(channel.getChannelId());
+                        updates.add(new RssUpdate(rssSubscriptionDTO.getId(),
+                                channel.getChannelId(),
+                                entry.getString("permalink"),
+                                rssSubscriptionDTO.getProvider(),
+                                entry.getString("subreddit_name_prefixed")));
                     }
                 } else {
-                    channelIds.add(channel.getChannelId());
+                    updates.add(new RssUpdate(rssSubscriptionDTO.getId(),
+                            channel.getChannelId(),
+                            entry.getString("permalink"),
+                            rssSubscriptionDTO.getProvider(),
+                            entry.getString("subreddit_name_prefixed")));
                 }
+
             }
-            updates.add(new RssUpdate(rssSubscriptionDTO.getId(), channelIds, entry.getString("permalink")));
         }
 
         if (!repository.updateLastScanComplete(rssSubscriptionDTO.getId())) {

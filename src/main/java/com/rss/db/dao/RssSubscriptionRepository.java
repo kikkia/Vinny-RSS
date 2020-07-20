@@ -32,7 +32,7 @@ public class RssSubscriptionRepository {
 
         try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(getQuery)) {
-                statement.setLong(1, System.currentTimeMillis() - 5000);
+                statement.setLong(1, System.currentTimeMillis() - 60000);
                 statement.setInt(2, provider.getValue());
                 try(ResultSet set = statement.executeQuery()) {
                     if (!set.first())
@@ -78,7 +78,7 @@ public class RssSubscriptionRepository {
                         channels.add(new RssChannelSubscriptionDTO(
                                 set.getInt("id"),
                                 set.getInt("rss_subscription_id"),
-                                set.getString("channel_id"),
+                                set.getString("text_channel_id"),
                                 set.getString("keyword")
                         ));
                     }

@@ -5,10 +5,11 @@ import com.rss.config.properties.MessagingProperties
 import com.rss.model.RssUpdate
 import io.nats.client.Connection
 import org.springframework.stereotype.Component
+import java.nio.charset.StandardCharsets
 
 @Component open class MessagingClient(val properties: MessagingProperties, private val connection: Connection) {
     fun sendRssUpdate(update: RssUpdate) {
         val encodedUpdate = GsonBuilder().create().toJson(update)
-        connection.publish(properties.rssPublishSubject, encodedUpdate.toByteArray())
+        connection.publish(properties.rssPublishSubject, encodedUpdate.toByteArray(StandardCharsets.UTF_8))
     }
 }
