@@ -7,6 +7,7 @@ import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssUpdate;
 import com.rss.utils.DislogLogger;
 import com.rss.clients.HttpClient;
+import com.rss.utils.RssUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.batch.item.ItemProcessor;
@@ -28,7 +29,7 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
 
     @Override
     public List<RssUpdate> process(RssSubscriptionDTO rssSubscriptionDTO) throws Exception {
-        String url = rssSubscriptionDTO.getUrl();
+        String url = RssUtils.Companion.getRedditUrl(rssSubscriptionDTO.getUrl());
         Instant lastScan =  rssSubscriptionDTO.getLastScanComplete();
 
         ArrayList<JSONObject> toUpdate = new ArrayList<>();

@@ -3,6 +3,7 @@ package com.rss.config.batch;
 import com.rss.batch.RedditRssProcessor;
 import com.rss.batch.RssSubscriptionReader;
 import com.rss.batch.RssSubscriptionWriter;
+import com.rss.batch.TwitterRssProcessor;
 import com.rss.clients.MessagingClient;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssSubscriptionDTO;
@@ -54,6 +55,10 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         return new RedditRssProcessor(repository, httpClient);
     }
 
+    public TwitterRssProcessor twitterRssProcessor(RssSubscriptionRepository repository) {
+        return new TwitterRssProcessor(repository);
+    }
+
     public RssSubscriptionReader reader(RssProvider provider) {
         return new RssSubscriptionReader(repository, provider);
     }
@@ -68,6 +73,14 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
+    public Job twitterRssJob() {
+        return jobBuilderFactory.get("twitterRssJob")
+                .incrementer(new RunIdIncrementer())
+                .flow(twitterStep())
+                .end()
+                .build();
+    }
+
     public Step redditStep() {
         return stepBuilderFactory.get("redditStep")
                 .<RssSubscriptionDTO, List<RssUpdate>> chunk(1)
@@ -77,10 +90,29 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
+    public Step twitterStep() {
+        return stepBuilderFactory.get("twitterStep")
+                .<RssSubscriptionDTO, List<RssUpdate>> chunk(1)
+                .reader(reader(RssProvider.TWITTER))
+                .processor(twitterRssProcessor(repository))
+                .writer(writer())
+                .build();
+    }
+
     @Scheduled(fixedRate = 2000)
     public void launchRedditRssScan() throws Exception {
         jobLauncher.run(
                 redditRssJob(),
+                new JobParametersBuilder()
+                        .addDate("date", new Date())
+                        .toJobParameters()
+        );
+    }
+
+    @Scheduled(fixedRate = 2000)
+    public void launchTwitterRssScan() throws Exception {
+        jobLauncher.run(
+                twitterRssJob(),
                 new JobParametersBuilder()
                         .addDate("date", new Date())
                         .toJobParameters()
