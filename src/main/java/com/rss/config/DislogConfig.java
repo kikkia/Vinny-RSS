@@ -14,7 +14,7 @@ import java.util.Map;
 public class DislogConfig {
 
     @Bean
-    public DislogClient client(DislogProperties properties) {
+    public DislogClient dislogClient(DislogProperties properties) {
         if (!properties.isEnabled())
             return null;
 

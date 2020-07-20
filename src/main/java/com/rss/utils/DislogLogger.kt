@@ -61,7 +61,7 @@ class DislogLogger(name: Class<*>) {
 
     fun error(message: String, throwable: Throwable?) {
         sendDisLog(LogLevel.ERROR, message, throwable)
-        logger.error(message)
+        logger.error(message, throwable)
     }
 
     private fun sendDisLog(level: LogLevel, message: String, throwable: Throwable?) {

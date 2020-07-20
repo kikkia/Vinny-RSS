@@ -1,17 +1,16 @@
 package com.rss.batch;
 
-import com.rometools.rome.feed.synd.SyndEntry;
-import com.rometools.rome.feed.synd.SyndFeed;
-import com.rometools.rome.io.SyndFeedInput;
-import com.rometools.rome.io.XmlReader;
+
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssChannelSubscriptionDTO;
 import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssUpdate;
 import com.rss.utils.DislogLogger;
+import com.rss.clients.HttpClient;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.batch.item.ItemProcessor;
 
-import java.net.URL;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,48 +19,61 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
 
     private DislogLogger logger = new DislogLogger(this.getClass());
     private RssSubscriptionRepository repository;
+    private HttpClient client;
 
-    public RedditRssProcessor(RssSubscriptionRepository repository) {
+    public RedditRssProcessor(RssSubscriptionRepository repository, HttpClient client) {
         this.repository = repository;
+        this.client = client;
     }
 
     @Override
     public List<RssUpdate> process(RssSubscriptionDTO rssSubscriptionDTO) throws Exception {
-        // TODO
         String url = rssSubscriptionDTO.getUrl();
         Instant lastScan =  rssSubscriptionDTO.getLastScanComplete();
 
-        ArrayList<SyndEntry> toUpdate = new ArrayList();
+        ArrayList<JSONObject> toUpdate = new ArrayList<>();
 
-        SyndFeed feed = new SyndFeedInput().build(new XmlReader(new URL(url)));
-        System.out.println(feed.getTitle());
-        for (SyndEntry e : feed.getEntries()) {
-            System.out.println(e);
-            Instant posted = e.getPublishedDate().toInstant();
-            if (posted.isAfter(lastScan)) {
-                toUpdate.add(e);
+        try {
+            JSONObject response = client.getJsonResponse(url);
+            JSONArray array = response.getJSONObject("data").getJSONArray("children");
+
+            // Checking all posts in data
+            for (Object jsonObject : array) {
+                if (jsonObject instanceof  JSONObject) {
+                    JSONObject post = (JSONObject) ((JSONObject) jsonObject).getJSONObject("data");
+                    Instant posted = Instant.ofEpochSecond(post.getLong("created_utc"));
+                    if (posted.isAfter(lastScan)) {
+                        toUpdate.add(post);
+                    }
+                }
             }
+        } catch (Exception e) {
+            logger.error("Failed to parse http response from reddit", e);
+            return null;
         }
 
         ArrayList<RssUpdate> updates = new ArrayList<>();
         // Go over new posts and find the channels that they need to update
         List<RssChannelSubscriptionDTO> subs = repository.getChannelSubsForSubcriptionId(rssSubscriptionDTO.getId());
 
-        for (SyndEntry entry : toUpdate) {
+        for (JSONObject entry : toUpdate) {
             List<String> channelIds = new ArrayList<>();
             for (RssChannelSubscriptionDTO channel : subs) {
                 String key = channel.getKeyword();
                 if (key != null) {
-                    if (entry.getTitle().contains(key)
-                            || entry.getLink().contains(key)
-                            || entry.getDescription().getValue().contains(key)) {
+                    if (entry.getString("title").contains(key)) {
                         channelIds.add(channel.getChannelId());
                     }
                 } else {
                     channelIds.add(channel.getChannelId());
                 }
             }
-            updates.add(new RssUpdate(rssSubscriptionDTO.getId(), channelIds, entry.getLink()));
+            updates.add(new RssUpdate(rssSubscriptionDTO.getId(), channelIds, entry.getString("permalink")));
+        }
+
+        if (!repository.updateLastScanComplete(rssSubscriptionDTO.getId())) {
+            logger.error("Failed to mark the last completed time, failing job");
+            return null;
         }
         return updates.isEmpty() ? null : updates;
     }

@@ -19,7 +19,7 @@ public class DatasourceConfig {
         HikariConfig config = new HikariConfig();
         config.setPassword(properties.getPassword());
         config.setUsername(properties.getUsername());
-        config.setJdbcUrl("jdbc:mysql://" + properties.getUri());
+        config.setJdbcUrl("jdbc:mysql://" + properties.getUri() + "/" + properties.getSchema());
         config.setSchema(properties.getSchema());
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(2);

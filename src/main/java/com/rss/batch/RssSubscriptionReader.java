@@ -5,9 +5,6 @@ import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssProvider;
 import com.rss.utils.DislogLogger;
 import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.NonTransientResourceException;
-import org.springframework.batch.item.ParseException;
-import org.springframework.batch.item.UnexpectedInputException;
 
 public class RssSubscriptionReader implements ItemReader<RssSubscriptionDTO> {
 
@@ -15,16 +12,20 @@ public class RssSubscriptionReader implements ItemReader<RssSubscriptionDTO> {
 
     private RssSubscriptionRepository repository;
     private RssProvider provider;
-    public RssSubscriptionReader(RssSubscriptionRepository repository, Long provider) {
+
+    public RssSubscriptionReader(RssSubscriptionRepository repository, RssProvider provider) {
         this.repository = repository;
-        this.provider = RssProvider.Companion.getProvider(provider.intValue());
+        this.provider = provider;
     }
 
     @Override
-    public RssSubscriptionDTO read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
-        // TODO: Job context to pass provider
+    public RssSubscriptionDTO read() {
         RssSubscriptionDTO dto = repository.getNextSubscription(provider);
-        logger.debug("Starting reddit sync for subreddit " + dto.getUrl());
+        if (dto == null) {
+            logger.warn("No subreddit found for sync");
+        } else {
+            logger.debug("Starting reddit sync for subreddit " + dto.getUrl());
+        }
         return dto;
     }
 }

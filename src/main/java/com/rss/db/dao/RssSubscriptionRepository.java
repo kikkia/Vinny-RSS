@@ -25,8 +25,8 @@ public class RssSubscriptionRepository {
     private HikariDataSource dataSource;
 
     public RssSubscriptionDTO getNextSubscription(RssProvider provider) {
-        String getQuery = "SELECT * FROM rss_subscription WHERE lastScanAttempted < ? AND provider = ? order by lastScanAttempted asc LIMIT 1;";
-        String updateQuery = "UPDATE rss_subscriptions SET lastScanAttempted = ? WHERE id = ?";
+        String getQuery = "SELECT * FROM rss_subscription WHERE lastScanAttempt < ? AND provider = ? order by lastScanAttempt asc LIMIT 1;";
+        String updateQuery = "UPDATE rss_subscription SET lastScanAttempt = ? WHERE id = ?";
 
         RssSubscriptionDTO dto;
 
@@ -43,7 +43,7 @@ public class RssSubscriptionRepository {
                             set.getString("url"),
                             set.getInt("provider"),
                             Instant.ofEpochMilli(set.getLong("lastScanAttempt")),
-                            Instant.ofEpochMilli(set.getLong("lastScanCompleted"))
+                            Instant.ofEpochMilli(set.getLong("lastScanComplete"))
                     );
                 }
             }
@@ -88,4 +88,20 @@ public class RssSubscriptionRepository {
         return channels;
     }
 
+    public boolean updateLastScanComplete(int id) {
+        String query = "UPDATE rss_subscription SET lastScanComplete = ? WHERE id = ?";
+
+        // Update the last scan attempt
+        try (Connection connection = dataSource.getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setLong(1, System.currentTimeMillis());
+                statement.setInt(2, id);
+                statement.execute();
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to update lastScanComplete", e);
+            return false;
+        }
+        return true;
+    }
 }
