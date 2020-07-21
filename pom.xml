@@ -107,7 +107,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>com.data.Application</mainClass>
+                            <mainClass>com.rss.Application</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
