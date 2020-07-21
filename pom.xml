@@ -89,6 +89,7 @@
     </dependencies>
 
     <build>
+        <sourceDirectory>src/main/java/com/rss</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
