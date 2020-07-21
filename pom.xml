@@ -94,7 +94,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.data.Application</mainClass>
+                    <mainClass>com.rss.Application</mainClass>
                 </configuration>
             </plugin>
             <plugin>
