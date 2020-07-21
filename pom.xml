@@ -18,6 +18,7 @@
     <properties>
         <java.version>1.8</java.version>
         <kotlin.version>1.3.61</kotlin.version>
+        <start-class>com.rss.Application</start-class>
     </properties>
 
     <dependencies>
