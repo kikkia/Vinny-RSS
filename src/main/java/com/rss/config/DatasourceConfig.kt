@@ -15,6 +15,10 @@ open class DatasourceConfig {
 
     @Bean
     open fun hikariConfig(properties: DatasourceProperties): HikariConfig {
+        if (properties.uri == null) {
+            throw RuntimeException("DB URI must be provided")
+        }
+
         val config = HikariConfig()
         config.password = properties.password
         config.username = properties.username
