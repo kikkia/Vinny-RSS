@@ -16,17 +16,17 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, List<RssUpdate>> {
+public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, List<RssUpdate>> {
 
     private RssSubscriptionRepository repository;
 
-    public TwitterRssProcessor(RssSubscriptionRepository repository) {
+    public YoutubeRssProcessor(RssSubscriptionRepository repository) {
         this.repository = repository;
     }
 
     @Override
     public List<RssUpdate> process(RssSubscriptionDTO rssSubscriptionDTO) throws Exception {
-        String url = RssUtils.Companion.getTwitterUrl(rssSubscriptionDTO.getUrl());
+        String url = RssUtils.Companion.getYoutubeUrl(rssSubscriptionDTO.getUrl());
         Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
 
         SyndFeed feed = new SyndFeedInput().build(new XmlReader(new URL(url)));
@@ -35,18 +35,18 @@ public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
         for (SyndEntry entry : feed.getEntries()) {
             Instant posted = entry.getPublishedDate().toInstant();
             if (posted.isAfter(lastScan)) {
-                boolean rt = entry.getTitle().startsWith("RT by");
                 for (RssChannelSubscriptionDTO dto : subs) {
                     toUpdate.add(new RssUpdate(
                             rssSubscriptionDTO.getId(),
                             dto.getChannelId(),
-                            entry.getLink().replace("nitter.net", "twitter.com"),
+                            entry.getLink(),
                             rssSubscriptionDTO.getProvider(),
-                            rt ? "**VINNY**RT@" + rssSubscriptionDTO.getUrl() : "@" + rssSubscriptionDTO.getUrl()
+                            entry.getAuthor()
                             ));
                 }
             }
         }
+
         repository.updateLastScanComplete(rssSubscriptionDTO.getId());
         return toUpdate.isEmpty() ? null : toUpdate;
     }

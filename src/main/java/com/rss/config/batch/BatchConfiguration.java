@@ -1,9 +1,6 @@
 package com.rss.config.batch;
 
-import com.rss.batch.RedditRssProcessor;
-import com.rss.batch.RssSubscriptionReader;
-import com.rss.batch.RssSubscriptionWriter;
-import com.rss.batch.TwitterRssProcessor;
+import com.rss.batch.*;
 import com.rss.clients.MessagingClient;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssSubscriptionDTO;
@@ -59,6 +56,10 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         return new TwitterRssProcessor(repository);
     }
 
+    public YoutubeRssProcessor youtubeRssProcessor(RssSubscriptionRepository repository) {
+        return new YoutubeRssProcessor(repository);
+    }
+
     public RssSubscriptionReader reader(RssProvider provider) {
         return new RssSubscriptionReader(repository, provider);
     }
@@ -81,9 +82,17 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
+    public Job youtubeRssJob() {
+        return jobBuilderFactory.get("youtubeRssJob")
+                .incrementer(new RunIdIncrementer())
+                .flow(youtubeStep())
+                .end()
+                .build();
+    }
+
     public Step redditStep() {
         return stepBuilderFactory.get("redditStep")
-                .<RssSubscriptionDTO, List<RssUpdate>> chunk(1)
+                .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
                 .reader(reader(RssProvider.REDDIT))
                 .processor(redditRssProcessor(repository))
                 .writer(writer())
@@ -99,7 +108,16 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
-    @Scheduled(fixedRate = 2000)
+    public Step youtubeStep() {
+        return stepBuilderFactory.get("youtubeStep")
+                .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
+                .reader(reader(RssProvider.YOUTUBE))
+                .processor(youtubeRssProcessor(repository))
+                .writer(writer())
+                .build();
+    }
+
+    @Scheduled(fixedRate = 1000)
     public void launchRedditRssScan() throws Exception {
         jobLauncher.run(
                 redditRssJob(),
@@ -109,10 +127,20 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 2000)
+    @Scheduled(fixedRate = 1000)
     public void launchTwitterRssScan() throws Exception {
         jobLauncher.run(
                 twitterRssJob(),
+                new JobParametersBuilder()
+                        .addDate("date", new Date())
+                        .toJobParameters()
+        );
+    }
+
+    @Scheduled(fixedRate = 1000)
+    public void launchYoutubeRssScan() throws Exception {
+        jobLauncher.run(
+                youtubeRssJob(),
                 new JobParametersBuilder()
                         .addDate("date", new Date())
                         .toJobParameters()
