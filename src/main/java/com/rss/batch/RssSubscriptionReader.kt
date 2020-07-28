@@ -11,7 +11,7 @@ class RssSubscriptionReader(private val repository: RssSubscriptionRepository, p
     override fun read(): RssSubscriptionDTO? {
         val dto = repository.getNextSubscription(provider)
         if (dto == null) {
-            logger.info("No feed ready for sync")
+            // logger.info("No feed ready for sync")
         } else {
             logger.debug("Starting rss sync for subject " + dto.url)
         }
