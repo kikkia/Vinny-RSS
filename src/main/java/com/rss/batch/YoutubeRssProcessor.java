@@ -46,8 +46,11 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
                 }
             }
         }
-
+        // If empty do not update completed timestamp, this is due to slow updates of the consumed feeds.
+        if (toUpdate.isEmpty()) {
+            return null;
+        }
         repository.updateLastScanComplete(rssSubscriptionDTO.getId());
-        return toUpdate.isEmpty() ? null : toUpdate;
+        return toUpdate;
     }
 }
