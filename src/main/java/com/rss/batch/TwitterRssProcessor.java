@@ -21,14 +21,16 @@ public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
 
     private RssSubscriptionRepository repository;
     private DislogLogger logger = new DislogLogger(this.getClass());
+    private String nitterPath;
 
-    public TwitterRssProcessor(RssSubscriptionRepository repository) {
+    public TwitterRssProcessor(RssSubscriptionRepository repository, String nitterPath) {
         this.repository = repository;
+        this.nitterPath = nitterPath;
     }
 
     @Override
     public List<RssUpdate> process(RssSubscriptionDTO rssSubscriptionDTO) throws Exception {
-        String url = RssUtils.Companion.getTwitterUrl(rssSubscriptionDTO.getUrl());
+        String url = RssUtils.Companion.getTwitterUrl(rssSubscriptionDTO.getUrl(), nitterPath);
         Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
 
         SyndFeed feed = new SyndFeedInput().build(new XmlReader(new URL(url)));

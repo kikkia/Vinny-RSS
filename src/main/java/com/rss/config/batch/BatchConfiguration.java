@@ -11,6 +11,7 @@ import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.*;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -33,6 +34,9 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     private HttpClient httpClient;
     private MessagingClient messagingClient;
 
+    @Value("${nitter.path}")
+    private String nitterPath;
+
     public BatchConfiguration(
             JobBuilderFactory jobBuilderFactory,
             StepBuilderFactory stepBuilderFactory,
@@ -53,7 +57,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     }
 
     public TwitterRssProcessor twitterRssProcessor(RssSubscriptionRepository repository) {
-        return new TwitterRssProcessor(repository);
+        return new TwitterRssProcessor(repository, nitterPath);
     }
 
     public YoutubeRssProcessor youtubeRssProcessor(RssSubscriptionRepository repository) {

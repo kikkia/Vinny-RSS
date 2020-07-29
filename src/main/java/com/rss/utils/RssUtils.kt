@@ -2,8 +2,8 @@ package com.rss.utils
 
 class RssUtils {
     companion object {
-        fun getTwitterUrl(user: String): String {
-            return "https://nitter.net/$user/rss"
+        fun getTwitterUrl(user: String, nitPath: String): String {
+            return "$nitPath/$user/rss"
         }
 
         fun getRedditUrl(subreddit: String): String {
