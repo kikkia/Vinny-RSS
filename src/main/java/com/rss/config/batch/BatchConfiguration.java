@@ -7,6 +7,7 @@ import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssProvider;
 import com.rss.model.RssUpdate;
 import com.rss.clients.HttpClient;
+import com.rss.utils.DislogLogger;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.*;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -33,6 +34,8 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     private RssSubscriptionRepository repository;
     private HttpClient httpClient;
     private MessagingClient messagingClient;
+
+    private DislogLogger logger = new DislogLogger(this.getClass());
 
     @Value("${nitter.path}")
     private String nitterPath;
@@ -62,6 +65,10 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
 
     public YoutubeRssProcessor youtubeRssProcessor(RssSubscriptionRepository repository) {
         return new YoutubeRssProcessor(repository);
+    }
+
+    public ChanRssProcessor chanRssProcessor(RssSubscriptionRepository repository) {
+        return new ChanRssProcessor(repository);
     }
 
     public RssSubscriptionReader reader(RssProvider provider) {
@@ -94,6 +101,14 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
+    public Job chanJob() {
+        return jobBuilderFactory.get("chanRssJob")
+                .incrementer(new RunIdIncrementer())
+                .flow(chanStep())
+                .end()
+                .build();
+    }
+
     public Step redditStep() {
         return stepBuilderFactory.get("redditStep")
                 .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
@@ -117,6 +132,15 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
                 .reader(reader(RssProvider.YOUTUBE))
                 .processor(youtubeRssProcessor(repository))
+                .writer(writer())
+                .build();
+    }
+
+    public Step chanStep() {
+        return stepBuilderFactory.get("chanStep")
+                .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
+                .reader(reader(RssProvider.CHAN))
+                .processor(chanRssProcessor(repository))
                 .writer(writer())
                 .build();
     }
@@ -145,6 +169,16 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     public void launchYoutubeRssScan() throws Exception {
         jobLauncher.run(
                 youtubeRssJob(),
+                new JobParametersBuilder()
+                        .addDate("date", new Date())
+                        .toJobParameters()
+        );
+    }
+
+    @Scheduled(fixedRate = 1000)
+    public void launchChanRssScan() throws Exception {
+        jobLauncher.run(
+                chanJob(),
                 new JobParametersBuilder()
                         .addDate("date", new Date())
                         .toJobParameters()

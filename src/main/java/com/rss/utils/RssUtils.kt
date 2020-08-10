@@ -13,5 +13,9 @@ class RssUtils {
         fun getYoutubeUrl(userId: String): String {
             return "https://www.youtube.com/feeds/videos.xml?channel_id=$userId"
         }
+
+        fun get4ChanUrl(board: String) : String {
+            return "https://boards.4chan.org/$board/index.rss"
+        }
     }
 }

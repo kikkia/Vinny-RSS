@@ -40,7 +40,7 @@ public class RssSubscriptionRepository {
 
                     dto = new RssSubscriptionDTO(
                             set.getInt("id"),
-                            set.getString("url"),
+                            set.getString("subject"),
                             set.getInt("provider"),
                             Instant.ofEpochMilli(set.getLong("lastScanAttempt")),
                             Instant.ofEpochMilli(set.getLong("lastScanComplete"))
