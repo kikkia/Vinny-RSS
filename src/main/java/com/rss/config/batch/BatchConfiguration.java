@@ -34,11 +34,12 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     private RssSubscriptionRepository repository;
     private HttpClient httpClient;
     private MessagingClient messagingClient;
+    private RedditRssProcessor redditRssProcessor;
+    private TwitterRssProcessor twitterRssProcessor;
+    private YoutubeRssProcessor youtubeRssProcessor;
+    private ChanRssProcessor chanRssProcessor;
 
     private DislogLogger logger = new DislogLogger(this.getClass());
-
-    @Value("${nitter.path}")
-    private String nitterPath;
 
     public BatchConfiguration(
             JobBuilderFactory jobBuilderFactory,
@@ -46,29 +47,18 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
             JobLauncher jobLauncher,
             RssSubscriptionRepository repository,
             HttpClient httpClient,
-            MessagingClient messagingClient) {
+            MessagingClient messagingClient,
+            @Value("${nitter.path}") String nitterPath) {
         this.jobLauncher =  jobLauncher;
         this.stepBuilderFactory = stepBuilderFactory;
         this.repository = repository;
         this.jobBuilderFactory = jobBuilderFactory;
         this.httpClient = httpClient;
         this.messagingClient = messagingClient;
-    }
-
-    public RedditRssProcessor redditRssProcessor(RssSubscriptionRepository repository) {
-        return new RedditRssProcessor(repository, httpClient);
-    }
-
-    public TwitterRssProcessor twitterRssProcessor(RssSubscriptionRepository repository) {
-        return new TwitterRssProcessor(repository, nitterPath);
-    }
-
-    public YoutubeRssProcessor youtubeRssProcessor(RssSubscriptionRepository repository) {
-        return new YoutubeRssProcessor(repository);
-    }
-
-    public ChanRssProcessor chanRssProcessor(RssSubscriptionRepository repository) {
-        return new ChanRssProcessor(repository);
+        this.redditRssProcessor = new RedditRssProcessor(repository, httpClient);
+        this.chanRssProcessor = new ChanRssProcessor(repository);
+        this.youtubeRssProcessor = new YoutubeRssProcessor(repository);
+        this.twitterRssProcessor = new TwitterRssProcessor(repository, nitterPath);
     }
 
     public RssSubscriptionReader reader(RssProvider provider) {
@@ -113,7 +103,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         return stepBuilderFactory.get("redditStep")
                 .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
                 .reader(reader(RssProvider.REDDIT))
-                .processor(redditRssProcessor(repository))
+                .processor(this.redditRssProcessor)
                 .writer(writer())
                 .build();
     }
@@ -122,7 +112,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         return stepBuilderFactory.get("twitterStep")
                 .<RssSubscriptionDTO, List<RssUpdate>> chunk(1)
                 .reader(reader(RssProvider.TWITTER))
-                .processor(twitterRssProcessor(repository))
+                .processor(this.twitterRssProcessor)
                 .writer(writer())
                 .build();
     }
@@ -131,7 +121,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         return stepBuilderFactory.get("youtubeStep")
                 .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
                 .reader(reader(RssProvider.YOUTUBE))
-                .processor(youtubeRssProcessor(repository))
+                .processor(this.youtubeRssProcessor)
                 .writer(writer())
                 .build();
     }
@@ -140,7 +130,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         return stepBuilderFactory.get("chanStep")
                 .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
                 .reader(reader(RssProvider.CHAN))
-                .processor(chanRssProcessor(repository))
+                .processor(this.chanRssProcessor)
                 .writer(writer())
                 .build();
     }

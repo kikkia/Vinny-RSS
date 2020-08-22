@@ -4,6 +4,7 @@ import com.rss.db.model.RssChannelSubscriptionDTO;
 import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.utils.DislogLogger;
 import com.rss.model.RssProvider;
+import com.rss.utils.RssUtils;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -32,7 +33,7 @@ public class RssSubscriptionRepository {
 
         try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(getQuery)) {
-                statement.setLong(1, System.currentTimeMillis() - 60000);
+                statement.setLong(1, System.currentTimeMillis() - RssUtils.Companion.getMinIntervalForProvider(provider));
                 statement.setInt(2, provider.getValue());
                 try(ResultSet set = statement.executeQuery()) {
                     if (!set.first())
