@@ -2,6 +2,7 @@ package com.rss.config.batch;
 
 import com.rss.batch.*;
 import com.rss.clients.MessagingClient;
+import com.rss.config.properties.AuthProperties;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssProvider;
@@ -48,6 +49,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     private TwitterRssProcessor twitterRssProcessor;
     private YoutubeRssProcessor youtubeRssProcessor;
     private ChanRssProcessor chanRssProcessor;
+    private TwitchRssProcessor twitchRssProcessor;
 
     private DislogLogger logger = new DislogLogger(this.getClass());
 
@@ -58,7 +60,8 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
             RssSubscriptionRepository repository,
             HttpClient httpClient,
             MessagingClient messagingClient,
-            @Value("${nitter.path}") String nitterPath) {
+            @Value("${nitter.path}") String nitterPath,
+            @Value("${twitch.clientId}") String twitchClientId) {
         this.jobLauncher =  jobLauncher;
         this.stepBuilderFactory = stepBuilderFactory;
         this.repository = repository;
@@ -69,6 +72,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         this.chanRssProcessor = new ChanRssProcessor(repository);
         this.youtubeRssProcessor = new YoutubeRssProcessor(repository);
         this.twitterRssProcessor = new TwitterRssProcessor(repository, nitterPath);
+        this.twitchRssProcessor = new TwitchRssProcessor(twitchClientId);
     }
 
     public RssSubscriptionReader reader(RssProvider provider) {
@@ -109,6 +113,14 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
+    public Job twitchJob() {
+        return jobBuilderFactory.get("twitchRssJob")
+                .incrementer(new RunIdIncrementer())
+                .flow(twitchStep())
+                .end()
+                .build();
+    }
+
     public Step redditStep() {
         return stepBuilderFactory.get("redditStep")
                 .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
@@ -141,6 +153,15 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
                 .reader(reader(RssProvider.CHAN))
                 .processor(this.chanRssProcessor)
+                .writer(writer())
+                .build();
+    }
+
+    public Step twitchStep() {
+        return stepBuilderFactory.get("twitchStep")
+                .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
+                .reader(reader(RssProvider.TWITCH))
+                .processor(this.twitchRssProcessor)
                 .writer(writer())
                 .build();
     }
@@ -179,6 +200,16 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     public void launchChanRssScan() throws Exception {
         jobLauncher.run(
                 chanJob(),
+                new JobParametersBuilder()
+                        .addDate("date", new Date())
+                        .toJobParameters()
+        );
+    }
+
+    @Scheduled(fixedRate = 1000)
+    public void launchTwitchRssScan() throws Exception {
+        jobLauncher.run(
+                twitchJob(),
                 new JobParametersBuilder()
                         .addDate("date", new Date())
                         .toJobParameters()

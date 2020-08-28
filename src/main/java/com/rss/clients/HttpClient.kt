@@ -15,4 +15,15 @@ import org.springframework.stereotype.Component
     fun getJsonResponse(url: String) : JSONObject {
         return JSONObject(getStringResponse(url))
     }
+
+    fun getJsonResponseWithHeaders(url: String, headers : List<Pair<String, String>>) : JSONObject {
+        val builder = Request.Builder()
+                .url(url)
+
+        for (header in headers) {
+            builder.addHeader(header.first, header.second)
+        }
+
+        client.newCall(builder.build()).execute().use { response -> return JSONObject(response.body!!.string()) }
+    }
 }
