@@ -30,7 +30,7 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
     @Override
     public List<RssUpdate> process(RssSubscriptionDTO rssSubscriptionDTO) throws Exception {
         String url = RssUtils.Companion.getRedditUrl(rssSubscriptionDTO.getUrl());
-        Instant lastScan =  rssSubscriptionDTO.getLastScanComplete();
+        Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
 
         ArrayList<JSONObject> toUpdate = new ArrayList<>();
 
@@ -41,7 +41,7 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
             // Checking all posts in data
             for (Object jsonObject : array) {
                 if (jsonObject instanceof  JSONObject) {
-                    JSONObject post = (JSONObject) ((JSONObject) jsonObject).getJSONObject("data");
+                    JSONObject post = ((JSONObject) jsonObject).getJSONObject("data");
                     Instant posted = Instant.ofEpochSecond(post.getLong("created_utc"));
                     if (posted.isAfter(lastScan)) {
                         toUpdate.add(post);
