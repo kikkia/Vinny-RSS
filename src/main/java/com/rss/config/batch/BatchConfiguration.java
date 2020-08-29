@@ -2,7 +2,6 @@ package com.rss.config.batch;
 
 import com.rss.batch.*;
 import com.rss.clients.MessagingClient;
-import com.rss.config.properties.AuthProperties;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssProvider;
@@ -13,25 +12,16 @@ import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.*;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
-import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
-import org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean;
-import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.sql.DataSource;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Configuration
 @EnableAutoConfiguration
@@ -56,7 +46,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     public BatchConfiguration(
             JobBuilderFactory jobBuilderFactory,
             StepBuilderFactory stepBuilderFactory,
-            JobLauncher jobLauncher,
+            @Qualifier("rss-launcher") JobLauncher jobLauncher,
             RssSubscriptionRepository repository,
             HttpClient httpClient,
             MessagingClient messagingClient,
@@ -72,7 +62,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         this.chanRssProcessor = new ChanRssProcessor(repository);
         this.youtubeRssProcessor = new YoutubeRssProcessor(repository);
         this.twitterRssProcessor = new TwitterRssProcessor(repository, nitterPath);
-        this.twitchRssProcessor = new TwitchRssProcessor(twitchClientId);
+        this.twitchRssProcessor = new TwitchRssProcessor(repository, twitchClientId, httpClient);
     }
 
     public RssSubscriptionReader reader(RssProvider provider) {
@@ -220,37 +210,5 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     public void setDataSource(DataSource dataSource) {
         // override to do not set datasource even if a datasource exist.
         // initialize will use a Map based JobRepository (instead of database)
-    }
-
-
-    // Since we do som any jobs and retry/resume is not a priority we make sure to use
-    // an in-memory repo. However slowly that ends up eating memory so we extend some
-    // repository functionality to allow us to clear the repo and free memory
-    @Bean
-    @Primary
-    public JobRepository myJobRepository() {
-        MapJobRepositoryFactoryBean factoryBean = new CustomMapJobRepositoryFactoryBean();
-        try {
-            JobRepository jobRepository = factoryBean.getObject();
-            return jobRepository;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    @Bean
-    @Primary
-    public JobLauncher myJobLauncher(JobRepository jobRepository) {
-        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
-        jobLauncher.setJobRepository(jobRepository);
-        return jobLauncher;
-    }
-
-    @Bean("clean-repo-executor")
-    public ScheduledExecutorService scheduleRepoClean(JobRepository repository) {
-        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-        executorService.scheduleAtFixedRate(new ClearRepoJob(repository), 2, 2, TimeUnit.MINUTES);
-        return executorService;
     }
 }
