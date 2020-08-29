@@ -70,7 +70,9 @@ public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
                     channel.getChannelId(),
                     toUpdate.getJSONObject("channel").getString("url"),
                     rssSubscriptionDTO.getProvider(),
-                    toUpdate.getJSONObject("channel").getString("display_name")));
+                    rssSubscriptionDTO.getUrl(),
+                    toUpdate.getJSONObject("channel").getString("display_name")
+            ));
         }
 
         if (!repository.updateLastScanComplete(rssSubscriptionDTO.getId())) {

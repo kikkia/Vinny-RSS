@@ -47,7 +47,8 @@ public class ChanRssProcessor implements ItemProcessor<RssSubscriptionDTO, List<
                             dto.getChannelId(),
                             entry.getLink(),
                             rssSubscriptionDTO.getProvider(),
-                            rssSubscriptionDTO.getUrl()
+                            rssSubscriptionDTO.getUrl(),
+                            "/" + rssSubscriptionDTO.getUrl() + "/"
                     ));
                 }
             }

@@ -49,7 +49,8 @@ public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
                             dto.getChannelId(),
                             entry.getLink().replace("nitter.net", "twitter.com"),
                             rssSubscriptionDTO.getProvider(),
-                            rt ? "**VINNY**RT@" + rssSubscriptionDTO.getUrl() : "@" + rssSubscriptionDTO.getUrl()
+                            rt ? "**VINNY**RT@" + rssSubscriptionDTO.getUrl() : "@" + rssSubscriptionDTO.getUrl(),
+                            rssSubscriptionDTO.getUrl()
                             ));
                 }
             }

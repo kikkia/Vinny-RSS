@@ -46,6 +46,7 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
                             dto.getChannelId(),
                             entry.getLink(),
                             rssSubscriptionDTO.getProvider(),
+                            rssSubscriptionDTO.getUrl(),
                             entry.getAuthor()
                             ));
                 }
