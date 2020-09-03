@@ -1,4 +1,4 @@
-package com.rss.batch;
+package com.rss.batch.processors;
 
 
 import com.rss.db.dao.RssSubscriptionRepository;

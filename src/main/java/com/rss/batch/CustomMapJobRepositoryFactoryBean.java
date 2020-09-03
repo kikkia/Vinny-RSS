@@ -1,6 +1,5 @@
 package com.rss.batch;
 
-import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.dao.*;
 import org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean;
 import org.springframework.batch.core.repository.support.SimpleJobRepository;
@@ -8,7 +7,7 @@ import org.springframework.batch.core.repository.support.SimpleJobRepository;
 public class CustomMapJobRepositoryFactoryBean extends MapJobRepositoryFactoryBean {
 
     @Override
-    public JobRepository getObject() throws Exception {
+    public MySimpleJobRepository getObject() throws Exception {
         return new MySimpleJobRepository(createJobInstanceDao(), createJobExecutionDao(), createStepExecutionDao(), createExecutionContextDao());
     }
 

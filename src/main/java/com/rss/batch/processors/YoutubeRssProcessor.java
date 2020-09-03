@@ -1,4 +1,4 @@
-package com.rss.batch;
+package com.rss.batch.processors;
 
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
@@ -17,40 +17,37 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, List<RssUpdate>> {
+public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, List<RssUpdate>> {
 
     private RssSubscriptionRepository repository;
     private DislogLogger logger = new DislogLogger(this.getClass());
-    private String nitterPath;
 
-    public TwitterRssProcessor(RssSubscriptionRepository repository, String nitterPath) {
+    public YoutubeRssProcessor(RssSubscriptionRepository repository) {
         this.repository = repository;
-        this.nitterPath = nitterPath;
     }
 
     @Override
     public List<RssUpdate> process(RssSubscriptionDTO rssSubscriptionDTO) throws Exception {
-        String url = RssUtils.Companion.getTwitterUrl(rssSubscriptionDTO.getUrl(), nitterPath);
+        String url = RssUtils.Companion.getYoutubeUrl(rssSubscriptionDTO.getUrl());
         Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
 
         SyndFeed feed = new SyndFeedInput().build(new XmlReader(new URL(url)));
         List<RssChannelSubscriptionDTO> subs = repository.getChannelSubsForSubcriptionId(rssSubscriptionDTO.getId());
         ArrayList<RssUpdate> toUpdate = new ArrayList<>();
         if (feed.getEntries().isEmpty()) {
-            logger.warn("EMPTY TWITTER RSS FEED FOUND");
+            logger.warn("EMPTY YT RSS FEED FOUND");
         }
         for (SyndEntry entry : feed.getEntries()) {
             Instant posted = entry.getPublishedDate().toInstant();
             if (posted.isAfter(lastScan)) {
-                boolean rt = entry.getTitle().startsWith("RT by");
                 for (RssChannelSubscriptionDTO dto : subs) {
                     toUpdate.add(new RssUpdate(
                             rssSubscriptionDTO.getId(),
                             dto.getChannelId(),
-                            entry.getLink().replace("nitter.net", "twitter.com"),
+                            entry.getLink(),
                             rssSubscriptionDTO.getProvider(),
-                            rt ? "**VINNY**RT@" + rssSubscriptionDTO.getUrl() : "@" + rssSubscriptionDTO.getUrl(),
-                            rssSubscriptionDTO.getUrl()
+                            rssSubscriptionDTO.getUrl(),
+                            entry.getAuthor()
                             ));
                 }
             }

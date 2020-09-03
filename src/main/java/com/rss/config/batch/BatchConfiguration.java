@@ -1,6 +1,7 @@
 package com.rss.config.batch;
 
 import com.rss.batch.*;
+import com.rss.batch.processors.*;
 import com.rss.clients.MessagingClient;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssSubscriptionDTO;
@@ -10,12 +11,19 @@ import com.rss.clients.HttpClient;
 import com.rss.utils.DislogLogger;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.*;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
+import org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean;
+import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -40,19 +48,20 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     private YoutubeRssProcessor youtubeRssProcessor;
     private ChanRssProcessor chanRssProcessor;
     private TwitchRssProcessor twitchRssProcessor;
+    private RunIdIncrementer runIdIncrementer;
+    private JobRepository jobRepository;
 
     private DislogLogger logger = new DislogLogger(this.getClass());
 
     public BatchConfiguration(
             JobBuilderFactory jobBuilderFactory,
             StepBuilderFactory stepBuilderFactory,
-            @Qualifier("rss-launcher") JobLauncher jobLauncher,
             RssSubscriptionRepository repository,
             HttpClient httpClient,
             MessagingClient messagingClient,
             @Value("${nitter.path}") String nitterPath,
             @Value("${twitch.clientId}") String twitchClientId) {
-        this.jobLauncher =  jobLauncher;
+        this.jobLauncher = getJobLauncher();
         this.stepBuilderFactory = stepBuilderFactory;
         this.repository = repository;
         this.jobBuilderFactory = jobBuilderFactory;
@@ -63,6 +72,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         this.youtubeRssProcessor = new YoutubeRssProcessor(repository);
         this.twitterRssProcessor = new TwitterRssProcessor(repository, nitterPath);
         this.twitchRssProcessor = new TwitchRssProcessor(repository, twitchClientId, httpClient);
+        this.runIdIncrementer = new RunIdIncrementer();
     }
 
     public RssSubscriptionReader reader(RssProvider provider) {
@@ -73,7 +83,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
 
     public Job redditRssJob() {
         return jobBuilderFactory.get("redditRssJob")
-                .incrementer(new RunIdIncrementer())
+                .incrementer(runIdIncrementer)
                 .flow(redditStep())
                 .end()
                 .build();
@@ -81,7 +91,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
 
     public Job twitterRssJob() {
         return jobBuilderFactory.get("twitterRssJob")
-                .incrementer(new RunIdIncrementer())
+                .incrementer(runIdIncrementer)
                 .flow(twitterStep())
                 .end()
                 .build();
@@ -89,7 +99,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
 
     public Job youtubeRssJob() {
         return jobBuilderFactory.get("youtubeRssJob")
-                .incrementer(new RunIdIncrementer())
+                .incrementer(runIdIncrementer)
                 .flow(youtubeStep())
                 .end()
                 .build();
@@ -97,7 +107,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
 
     public Job chanJob() {
         return jobBuilderFactory.get("chanRssJob")
-                .incrementer(new RunIdIncrementer())
+                .incrementer(runIdIncrementer)
                 .flow(chanStep())
                 .end()
                 .build();
@@ -105,7 +115,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
 
     public Job twitchJob() {
         return jobBuilderFactory.get("twitchRssJob")
-                .incrementer(new RunIdIncrementer())
+                .incrementer(runIdIncrementer)
                 .flow(twitchStep())
                 .end()
                 .build();
@@ -158,7 +168,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
 
     @Scheduled(fixedRate = 1000)
     public void launchRedditRssScan() throws Exception {
-        jobLauncher.run(
+        getJobLauncher().run(
                 redditRssJob(),
                 new JobParametersBuilder()
                         .addDate("date", new Date())
@@ -168,7 +178,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
 
     @Scheduled(fixedRate = 1000)
     public void launchTwitterRssScan() throws Exception {
-        jobLauncher.run(
+        getJobLauncher().run(
                 twitterRssJob(),
                 new JobParametersBuilder()
                         .addDate("date", new Date())
@@ -178,7 +188,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
 
     @Scheduled(fixedRate = 1000)
     public void launchYoutubeRssScan() throws Exception {
-        jobLauncher.run(
+        getJobLauncher().run(
                 youtubeRssJob(),
                 new JobParametersBuilder()
                         .addDate("date", new Date())
@@ -188,7 +198,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
 
     @Scheduled(fixedRate = 1000)
     public void launchChanRssScan() throws Exception {
-        jobLauncher.run(
+        getJobLauncher().run(
                 chanJob(),
                 new JobParametersBuilder()
                         .addDate("date", new Date())
@@ -198,7 +208,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
 
     @Scheduled(fixedRate = 1000)
     public void launchTwitchRssScan() throws Exception {
-        jobLauncher.run(
+        getJobLauncher().run(
                 twitchJob(),
                 new JobParametersBuilder()
                         .addDate("date", new Date())
@@ -210,5 +220,34 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     public void setDataSource(DataSource dataSource) {
         // override to do not set datasource even if a datasource exist.
         // initialize will use a Map based JobRepository (instead of database)
+    }
+
+    /**
+     * Overriding all of this stuff to allow us to clear out the in memory metadata repo.
+     * If left unchecked this will grow forever, causing memory issues.
+     * Reasons why we use in-memory over JDBC repo:
+     * 1. We have a LOT of batch jobs going, this would cause non-negligible load on the db
+     * 2. We have no need for resuming or retrying jobs
+     * 3. No need for metadata to be persisted and take up storage
+     * 4. Using a jdbc repo add latency to each job, even at <1ms of db ping, it was adding a fair amount
+     */
+    @Override
+    protected JobLauncher createJobLauncher() throws Exception {
+        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
+        jobLauncher.setJobRepository(createJobRepository());
+        jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor());
+        jobLauncher.afterPropertiesSet();
+        return jobLauncher;
+    }
+
+    @Override
+    protected JobRepository createJobRepository() throws Exception {
+        MapJobRepositoryFactoryBean factoryBean = new CustomMapJobRepositoryFactoryBean();
+        jobRepository = factoryBean.getObject();
+        return jobRepository;
+    }
+
+    public JobRepository getJobRepository() {
+        return jobRepository;
     }
 }
