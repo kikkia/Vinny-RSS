@@ -8,6 +8,7 @@ import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssProvider;
 import com.rss.model.RssUpdate;
 import com.rss.clients.HttpClient;
+import com.rss.service.MetricsService;
 import com.rss.utils.DislogLogger;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.*;
@@ -50,6 +51,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     private TwitchRssProcessor twitchRssProcessor;
     private RunIdIncrementer runIdIncrementer;
     private JobRepository jobRepository;
+    private MetricsService metricsService;
 
     private DislogLogger logger = new DislogLogger(this.getClass());
 
@@ -59,6 +61,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
             RssSubscriptionRepository repository,
             HttpClient httpClient,
             MessagingClient messagingClient,
+            MetricsService metricsService,
             @Value("${nitter.path}") String nitterPath,
             @Value("${twitch.clientId}") String twitchClientId) {
         this.jobLauncher = getJobLauncher();
@@ -67,6 +70,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         this.jobBuilderFactory = jobBuilderFactory;
         this.httpClient = httpClient;
         this.messagingClient = messagingClient;
+        this.metricsService = metricsService;
         this.redditRssProcessor = new RedditRssProcessor(repository, httpClient);
         this.chanRssProcessor = new ChanRssProcessor(repository);
         this.youtubeRssProcessor = new YoutubeRssProcessor(repository);
@@ -76,7 +80,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     }
 
     public RssSubscriptionReader reader(RssProvider provider) {
-        return new RssSubscriptionReader(repository, provider);
+        return new RssSubscriptionReader(repository, metricsService, provider);
     }
 
     public RssSubscriptionWriter writer() {return new RssSubscriptionWriter(messagingClient);}
