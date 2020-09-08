@@ -59,6 +59,10 @@ public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
         if (toUpdate.isEmpty()) {
             return null;
         }
+        if (!repository.updateLastScanComplete(rssSubscriptionDTO.getId())) {
+            logger.error("Failed to mark the last completed time, failing job");
+            return null;
+        }
         repository.updateLastScanComplete(rssSubscriptionDTO.getId());
         return toUpdate;
     }

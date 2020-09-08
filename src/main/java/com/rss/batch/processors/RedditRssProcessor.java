@@ -80,7 +80,10 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
 
             }
         }
-
+        // If empty do not update completed timestamp, this is due to slow updates of the consumed feeds.
+        if (toUpdate.isEmpty()) {
+            return null;
+        }
         if (!repository.updateLastScanComplete(rssSubscriptionDTO.getId())) {
             logger.error("Failed to mark the last completed time, failing job");
             return null;

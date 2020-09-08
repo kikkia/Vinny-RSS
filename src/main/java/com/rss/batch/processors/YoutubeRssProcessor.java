@@ -56,7 +56,10 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
         if (toUpdate.isEmpty()) {
             return null;
         }
-        repository.updateLastScanComplete(rssSubscriptionDTO.getId());
+        if (!repository.updateLastScanComplete(rssSubscriptionDTO.getId())) {
+            logger.error("Failed to mark the last completed time, failing job");
+            return null;
+        }
         return toUpdate;
     }
 }
