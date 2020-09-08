@@ -10,6 +10,7 @@ import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssUpdate;
 import com.rss.utils.DislogLogger;
 import com.rss.utils.RssUtils;
+import org.slf4j.MDC;
 import org.springframework.batch.item.ItemProcessor;
 
 import java.net.URL;
@@ -28,38 +29,40 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
 
     @Override
     public List<RssUpdate> process(RssSubscriptionDTO rssSubscriptionDTO) throws Exception {
-        String url = RssUtils.Companion.getYoutubeUrl(rssSubscriptionDTO.getUrl());
-        Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
+        try(MDC.MDCCloseable id = MDC.putCloseable("subscriptionId", rssSubscriptionDTO.getId() + "")) {
+            String url = RssUtils.Companion.getYoutubeUrl(rssSubscriptionDTO.getUrl());
+            Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
 
-        SyndFeed feed = new SyndFeedInput().build(new XmlReader(new URL(url)));
-        List<RssChannelSubscriptionDTO> subs = repository.getChannelSubsForSubcriptionId(rssSubscriptionDTO.getId());
-        ArrayList<RssUpdate> toUpdate = new ArrayList<>();
-        if (feed.getEntries().isEmpty()) {
-            logger.warn("EMPTY YT RSS FEED FOUND");
-        }
-        for (SyndEntry entry : feed.getEntries()) {
-            Instant posted = entry.getPublishedDate().toInstant();
-            if (posted.isAfter(lastScan)) {
-                for (RssChannelSubscriptionDTO dto : subs) {
-                    toUpdate.add(new RssUpdate(
-                            rssSubscriptionDTO.getId(),
-                            dto.getChannelId(),
-                            entry.getLink(),
-                            rssSubscriptionDTO.getProvider(),
-                            rssSubscriptionDTO.getUrl(),
-                            entry.getAuthor()
-                            ));
+            SyndFeed feed = new SyndFeedInput().build(new XmlReader(new URL(url)));
+            List<RssChannelSubscriptionDTO> subs = repository.getChannelSubsForSubcriptionId(rssSubscriptionDTO.getId());
+            ArrayList<RssUpdate> toUpdate = new ArrayList<>();
+            if (feed.getEntries().isEmpty()) {
+                logger.warn("EMPTY YT RSS FEED FOUND");
+            }
+            for (SyndEntry entry : feed.getEntries()) {
+                Instant posted = entry.getPublishedDate().toInstant();
+                if (posted.isAfter(lastScan)) {
+                    for (RssChannelSubscriptionDTO dto : subs) {
+                        toUpdate.add(new RssUpdate(
+                                rssSubscriptionDTO.getId(),
+                                dto.getChannelId(),
+                                entry.getLink(),
+                                rssSubscriptionDTO.getProvider(),
+                                rssSubscriptionDTO.getUrl(),
+                                entry.getAuthor()
+                        ));
+                    }
                 }
             }
+            // If empty do not update completed timestamp, this is due to slow updates of the consumed feeds.
+            if (toUpdate.isEmpty()) {
+                return null;
+            }
+            if (!repository.updateLastScanComplete(rssSubscriptionDTO.getId())) {
+                logger.error("Failed to mark the last completed time, failing job");
+                return null;
+            }
+            return toUpdate;
         }
-        // If empty do not update completed timestamp, this is due to slow updates of the consumed feeds.
-        if (toUpdate.isEmpty()) {
-            return null;
-        }
-        if (!repository.updateLastScanComplete(rssSubscriptionDTO.getId())) {
-            logger.error("Failed to mark the last completed time, failing job");
-            return null;
-        }
-        return toUpdate;
     }
 }
