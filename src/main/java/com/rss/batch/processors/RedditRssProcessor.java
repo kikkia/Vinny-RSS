@@ -88,6 +88,6 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
             logger.error("Failed to mark the last completed time, failing job");
             return null;
         }
-        return updates.isEmpty() ? null : updates;
+        return updates;
     }
 }

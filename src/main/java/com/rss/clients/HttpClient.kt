@@ -6,7 +6,7 @@ import org.json.JSONObject
 import org.springframework.stereotype.Component
 
 @Component class HttpClient(private val client: OkHttpClient) {
-    private fun getStringResponse(url: String) : String {
+    fun getStringResponse(url: String) : String {
         val request = Request.Builder().url(url).build()
 
         client.newCall(request).execute().use { response -> return response.body!!.string() }

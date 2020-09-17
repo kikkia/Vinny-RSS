@@ -4,6 +4,7 @@ import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
+import com.rss.clients.HttpClient;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssChannelSubscriptionDTO;
 import com.rss.db.model.RssSubscriptionDTO;
@@ -20,11 +21,14 @@ import java.util.List;
 
 public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, List<RssUpdate>> {
 
+    private final String LIVE_TAG = "\"key\":\"is_viewed_live\",\"value\":\"True\"";
     private RssSubscriptionRepository repository;
     private DislogLogger logger = new DislogLogger(this.getClass());
+    private HttpClient client;
 
-    public YoutubeRssProcessor(RssSubscriptionRepository repository) {
+    public YoutubeRssProcessor(RssSubscriptionRepository repository, HttpClient client) {
         this.repository = repository;
+        this.client = client;
     }
 
     @Override
@@ -36,19 +40,18 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
             SyndFeed feed = new SyndFeedInput().build(new XmlReader(new URL(url)));
             List<RssChannelSubscriptionDTO> subs = repository.getChannelSubsForSubcriptionId(rssSubscriptionDTO.getId());
             ArrayList<RssUpdate> toUpdate = new ArrayList<>();
-            if (feed.getEntries().isEmpty()) {
-                logger.warn("EMPTY YT RSS FEED FOUND");
-            }
             for (SyndEntry entry : feed.getEntries()) {
                 Instant posted = entry.getPublishedDate().toInstant();
                 if (posted.isAfter(lastScan)) {
+                    boolean live = client.getStringResponse(entry.getLink()).contains(LIVE_TAG);
+                    String subject = live ? "**VINNY**Live" + rssSubscriptionDTO.getUrl() : rssSubscriptionDTO.getUrl();
                     for (RssChannelSubscriptionDTO dto : subs) {
                         toUpdate.add(new RssUpdate(
                                 rssSubscriptionDTO.getId(),
                                 dto.getChannelId(),
                                 entry.getLink(),
                                 rssSubscriptionDTO.getProvider(),
-                                rssSubscriptionDTO.getUrl(),
+                                subject,
                                 entry.getAuthor()
                         ));
                     }
