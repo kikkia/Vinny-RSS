@@ -3,6 +3,7 @@ package com.rss.config.batch;
 import com.rss.batch.*;
 import com.rss.batch.processors.*;
 import com.rss.clients.MessagingClient;
+import com.rss.config.properties.AuthProperties;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssProvider;
@@ -62,6 +63,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
             HttpClient httpClient,
             MessagingClient messagingClient,
             MetricsService metricsService,
+            AuthProperties authProperties,
             @Value("${nitter.path}") String nitterPath,
             @Value("${twitch.clientId}") String twitchClientId) {
         this.jobLauncher = getJobLauncher();
@@ -73,7 +75,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         this.metricsService = metricsService;
         this.redditRssProcessor = new RedditRssProcessor(repository, httpClient);
         this.chanRssProcessor = new ChanRssProcessor(repository);
-        this.youtubeRssProcessor = new YoutubeRssProcessor(repository, httpClient);
+        this.youtubeRssProcessor = new YoutubeRssProcessor(repository, httpClient, authProperties);
         this.twitterRssProcessor = new TwitterRssProcessor(repository, nitterPath);
         this.twitchRssProcessor = new TwitchRssProcessor(repository, twitchClientId, httpClient);
         this.runIdIncrementer = new RunIdIncrementer();
@@ -170,7 +172,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
-    @Scheduled(fixedRate = 1000)
+    //@Scheduled(fixedRate = 1000)
     public void launchRedditRssScan() throws Exception {
         getJobLauncher().run(
                 redditRssJob(),
@@ -180,7 +182,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 1000)
+    //@Scheduled(fixedRate = 1000)
     public void launchTwitterRssScan() throws Exception {
         getJobLauncher().run(
                 twitterRssJob(),
@@ -200,7 +202,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 1000)
+    //@Scheduled(fixedRate = 1000)
     public void launchChanRssScan() throws Exception {
         getJobLauncher().run(
                 chanJob(),
@@ -210,7 +212,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 1000)
+    //@Scheduled(fixedRate = 1000)
     public void launchTwitchRssScan() throws Exception {
         getJobLauncher().run(
                 twitchJob(),

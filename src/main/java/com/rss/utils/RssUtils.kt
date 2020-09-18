@@ -16,6 +16,10 @@ class RssUtils {
             return "https://www.youtube.com/feeds/videos.xml?channel_id=$userId"
         }
 
+        fun getYoutubeLiveUrl(videoId: String, key: String) : String {
+            return "https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=$videoId&key=$key"
+        }
+
         fun get4ChanUrl(board: String) : String {
             return "https://boards.4chan.org/$board/index.rss"
         }

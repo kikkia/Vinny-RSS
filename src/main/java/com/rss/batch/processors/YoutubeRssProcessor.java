@@ -5,12 +5,14 @@ import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 import com.rss.clients.HttpClient;
+import com.rss.config.properties.AuthProperties;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssChannelSubscriptionDTO;
 import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssUpdate;
 import com.rss.utils.DislogLogger;
 import com.rss.utils.RssUtils;
+import org.json.JSONException;
 import org.slf4j.MDC;
 import org.springframework.batch.item.ItemProcessor;
 
@@ -23,12 +25,14 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
 
     private final String LIVE_TAG = "\"key\":\"is_viewed_live\",\"value\":\"True\"";
     private RssSubscriptionRepository repository;
+    private AuthProperties authProperties;
     private DislogLogger logger = new DislogLogger(this.getClass());
     private HttpClient client;
 
-    public YoutubeRssProcessor(RssSubscriptionRepository repository, HttpClient client) {
+    public YoutubeRssProcessor(RssSubscriptionRepository repository, HttpClient client, AuthProperties properties) {
         this.repository = repository;
         this.client = client;
+        this.authProperties = properties;
     }
 
     @Override
@@ -43,7 +47,7 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
             for (SyndEntry entry : feed.getEntries()) {
                 Instant posted = entry.getPublishedDate().toInstant();
                 if (posted.isAfter(lastScan)) {
-                    boolean live = client.getStringResponse(entry.getLink()).contains(LIVE_TAG);
+                    boolean live = isLive(entry.getLink());
                     String subject = live ? "**VINNY**Live" + rssSubscriptionDTO.getUrl() : rssSubscriptionDTO.getUrl();
                     for (RssChannelSubscriptionDTO dto : subs) {
                         toUpdate.add(new RssUpdate(
@@ -66,6 +70,20 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
                 return null;
             }
             return toUpdate;
+        } catch (Exception e) {
+            logger.error("Failed to do YT rss scan", e);
+            return null;
+        }
+    }
+
+    private boolean isLive(String url) {
+        try {
+            return client.getJsonResponse(RssUtils.Companion.getYoutubeLiveUrl(url.split("/?v=")[1], authProperties.getYoutubeToken()))
+                    .getJSONArray("items")
+                    .getJSONObject(0)
+                    .get("liveStreamingDetails") != null;
+        } catch (JSONException e) {
+            return false;
         }
     }
 }

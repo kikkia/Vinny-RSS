@@ -8,4 +8,5 @@ import org.springframework.stereotype.Component
 open class AuthProperties {
     var clientIps: List<String>? = null
     var clientToken: String? = null
+    var youtubeToken: String? = null
 }
