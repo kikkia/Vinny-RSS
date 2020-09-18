@@ -75,7 +75,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         this.metricsService = metricsService;
         this.redditRssProcessor = new RedditRssProcessor(repository, httpClient);
         this.chanRssProcessor = new ChanRssProcessor(repository);
-        this.youtubeRssProcessor = new YoutubeRssProcessor(repository, httpClient, authProperties);
+        this.youtubeRssProcessor = new YoutubeRssProcessor(repository, httpClient, authProperties, metricsService);
         this.twitterRssProcessor = new TwitterRssProcessor(repository, nitterPath);
         this.twitchRssProcessor = new TwitchRssProcessor(repository, twitchClientId, httpClient);
         this.runIdIncrementer = new RunIdIncrementer();
