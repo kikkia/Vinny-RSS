@@ -10,6 +10,7 @@ import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssChannelSubscriptionDTO;
 import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssUpdate;
+import com.rss.service.MetricsService;
 import com.rss.utils.DislogLogger;
 import com.rss.utils.RssUtils;
 import org.json.JSONException;
@@ -26,13 +27,15 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
     private final String LIVE_TAG = "\"key\":\"is_viewed_live\",\"value\":\"True\"";
     private RssSubscriptionRepository repository;
     private AuthProperties authProperties;
+    private MetricsService metricsService;
     private DislogLogger logger = new DislogLogger(this.getClass());
     private HttpClient client;
 
-    public YoutubeRssProcessor(RssSubscriptionRepository repository, HttpClient client, AuthProperties properties) {
+    public YoutubeRssProcessor(RssSubscriptionRepository repository, HttpClient client, AuthProperties properties, MetricsService service) {
         this.repository = repository;
         this.client = client;
         this.authProperties = properties;
+        this.metricsService = service;
     }
 
     @Override
@@ -49,6 +52,7 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
                 if (posted.isAfter(lastScan)) {
                     boolean live = isLive(entry.getLink());
                     String subject = live ? "**VINNY**Live" + rssSubscriptionDTO.getUrl() : rssSubscriptionDTO.getUrl();
+                    metricsService.markYTLiveExecute(rssSubscriptionDTO);
                     for (RssChannelSubscriptionDTO dto : subs) {
                         toUpdate.add(new RssUpdate(
                                 rssSubscriptionDTO.getId(),

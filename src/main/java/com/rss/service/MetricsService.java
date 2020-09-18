@@ -1,5 +1,6 @@
 package com.rss.service;
 
+import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RssProvider;
 import com.timgroup.statsd.StatsDClient;
 import org.springframework.stereotype.Component;
@@ -18,5 +19,10 @@ public class MetricsService {
         client.incrementCounter("rss.update.updated", providerTag);
         client.time("rss.update.attemptLatency", timeSinceLastAttempt, providerTag);
         client.time("rss.update.completedLatency", timeSinceLastCompleted, providerTag);
+    }
+
+    public void markYTLiveExecute(RssSubscriptionDTO dto) {
+        String idTag = "id:" + dto.getId();
+        client.incrementCounter("rss.update.ytlive");
     }
 }
