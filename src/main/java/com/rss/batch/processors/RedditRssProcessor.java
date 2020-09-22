@@ -74,7 +74,7 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
                             channel.getChannelId(),
                             entry.getString("permalink"),
                             rssSubscriptionDTO.getProvider(),
-                            entry.getString("subreddit_name_prefixed"),
+                            rssSubscriptionDTO.getUrl(),
                             entry.getString("subreddit_name_prefixed")));
                 }
 
