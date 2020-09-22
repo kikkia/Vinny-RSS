@@ -172,7 +172,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 600000)
     public void launchRedditRssScan() throws Exception {
         getJobLauncher().run(
                 redditRssJob(),
