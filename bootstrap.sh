@@ -1,1 +1,1 @@
-java -Ddd.profiling.enabled=true -Ddd.profiling.api-key-file=res/ddkey.txt -Ddd.trace.analytics.enabled=true -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true -javaagent:"/app/res/dd-java-agent.jar" -jar vinny-rss-1.0.jar
+java -Ddd.profiling.enabled=true -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true -jar vinny-rss-1.0.jar
