@@ -2,7 +2,6 @@ package com.rss.clients.networking
 
 import com.rss.clients.networking.address.Ipv6Block
 import java.net.InetAddress
-import java.net.InetSocketAddress
 import java.net.Socket
 import javax.net.SocketFactory
 
@@ -10,10 +9,8 @@ class RotatatingIpV6SocketFactory(private val ipBlock: Ipv6Block) : SocketFactor
     private val systemFactory = getDefault()
 
     override fun createSocket(): Socket {
-        val s = systemFactory.createSocket()
         val random = ipBlock.randomAddress
-        s.bind(InetSocketAddress(random, 1234))
-        return s
+        return systemFactory.createSocket(random, 0)
     }
 
     override fun createSocket(host: String, port: Int): Socket {
