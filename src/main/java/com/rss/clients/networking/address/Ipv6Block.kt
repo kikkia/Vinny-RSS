@@ -1,13 +1,13 @@
 package com.rss.clients.networking.address
 
 import com.rss.utils.ThiccRandom
+import okhttp3.internal.and
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.net.Inet6Address
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util.regex.Pattern
-import kotlin.experimental.and
 
 
 class Ipv6Block(cidr: String) : IpBlock<Inet6Address?>() {
@@ -18,8 +18,8 @@ class Ipv6Block(cidr: String) : IpBlock<Inet6Address?>() {
 
     override val randomAddress: Inet6Address
         get() {
-            if (maskBits == IPV6_BIT_SIZE) return longToAddress(prefix)
-            val randomAddressOffset: BigInteger = random.nextThiccInt(IPV6_BIT_SIZE - (maskBits + 1)).abs()
+            if (maskBits == BIT_SIZE) return longToAddress(prefix)
+            val randomAddressOffset: BigInteger = random.nextThiccInt(BIT_SIZE - (maskBits + 1)).abs()
             val inetAddress = longToAddress(prefix.add(randomAddressOffset))
             log.info(inetAddress.toString())
             return inetAddress
@@ -35,7 +35,7 @@ class Ipv6Block(cidr: String) : IpBlock<Inet6Address?>() {
     }
 
     override val size: BigInteger
-        get() = TWO.pow(IPV6_BIT_SIZE - maskBits)
+        get() = TWO.pow(BIT_SIZE - maskBits)
 
     override fun toString(): String {
         return cidr
@@ -51,13 +51,13 @@ class Ipv6Block(cidr: String) : IpBlock<Inet6Address?>() {
         private val TWO = BigInteger.valueOf(2)
         private val BITS1 = BigInteger.valueOf(-1)
         val BLOCK64_IPS = TWO.pow(64)
-        const val IPV6_BIT_SIZE = 128
+        const val BIT_SIZE = 128
         private val random: ThiccRandom = ThiccRandom()
         private val CIDR_REGEX = Pattern.compile("([\\da-f:]+)/(\\d{1,3})")
         private val log = LoggerFactory.getLogger(Ipv6Block::class.java)
 
         private fun longToAddress(l: BigInteger): Inet6Address {
-            val b = ByteArray(IPV6_BIT_SIZE / 8)
+            val b = ByteArray(BIT_SIZE / 8)
             val start = (b.size - 1) * 8
             for (i in b.indices) {
                 val shift = start - i * 8
@@ -81,10 +81,10 @@ class Ipv6Block(cidr: String) : IpBlock<Inet6Address?>() {
             for (i in 1 until b.size) {
                 val shift = start - i * 8
                 value = if (shift > 0) {
-                    value.or(BigInteger.valueOf((b[i] and 0xff.toByte()).toLong()).shiftLeft(shift))
+                    value.or(BigInteger.valueOf((b[i] and 0xff).toLong()).shiftLeft(shift))
                 }
                 else {
-                    value.or(BigInteger.valueOf((b[i] and 0xff.toByte()).toLong()))
+                    value.or(BigInteger.valueOf((b[i] and 0xff).toLong()))
                 }
             }
             return value
@@ -105,7 +105,7 @@ class Ipv6Block(cidr: String) : IpBlock<Inet6Address?>() {
             throw IllegalArgumentException("Invalid IPv6 address", e)
         }
         maskBits = matcher.group(2).toInt()
-        val prefixMask = BITS1.shiftLeft(IPV6_BIT_SIZE - maskBits - 1)
+        val prefixMask = BITS1.shiftLeft(BIT_SIZE - maskBits - 1)
         prefix = unboundedPrefix.and(prefixMask)
         log.info("Using Ipv6Block with {} addresses", size)
     }
