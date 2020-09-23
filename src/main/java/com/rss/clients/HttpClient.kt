@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component
     fun getStringResponse(url: String) : String {
         val request = Request.Builder().url(url).build()
 
-        client.newCall(request).execute().use { response -> return response.body!!.string() }
+        client.newCall(request).execute().use { response -> println("code: ${response.code}")
+            return response.body!!.string()
+        }
     }
 
     fun getJsonResponse(url: String) : JSONObject {
