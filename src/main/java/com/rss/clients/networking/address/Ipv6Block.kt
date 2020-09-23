@@ -61,7 +61,7 @@ class Ipv6Block(cidr: String) : IpBlock<Inet6Address?>() {
             val start = (b.size - 1) * 8
             for (i in b.indices) {
                 val shift = start - i * 8
-                if (shift > 0) b[i] = l.shiftRight(start - i * 8).byteValueExact() else b[i] = l.byteValueExact()
+                if (shift > 0) b[i] = l.shiftRight(start - i * 8).toByte() else b[i] = l.toByte()
             }
             return try {
                 Inet6Address.getByAddress(b) as Inet6Address
