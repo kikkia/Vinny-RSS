@@ -7,4 +7,6 @@ FROM openjdk:latest
 WORKDIR /app
 COPY --from=build /app/target/ /app
 COPY --from=build /app/res/ /app/res
-CMD java -javaagent:"/app/res/dd-java-agent.jar" -Ddd.profiling.enabled=true -Ddd.profiling.api-key-file=res/ddkey.txt -Ddd.trace.analytics.enabled=true -jar vinny-rss-1.0.jar
+COPY --from=build /app/bootstrap.sh /app
+RUN chmod -R 777 /app/bootstrap.sh
+CMD ./bootstrap.sh
