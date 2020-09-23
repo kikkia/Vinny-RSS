@@ -12,7 +12,7 @@ class RotatatingIpV6SocketFactory(private val ipBlock: Ipv6Block) : SocketFactor
     override fun createSocket(): Socket {
         val s = systemFactory.createSocket()
         val random = ipBlock.randomAddress
-        s.bind(InetSocketAddress(random, 0))
+        s.bind(InetSocketAddress(random, 1234))
         return s
     }
 
