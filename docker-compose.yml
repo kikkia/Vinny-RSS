@@ -3,3 +3,6 @@ services:
   rss:
     build: .
     restart: always
+    network_mode: host
+    environment:
+      - DD_SERVICE=vinny-rss
