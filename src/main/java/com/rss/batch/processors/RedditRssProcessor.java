@@ -4,6 +4,7 @@ package com.rss.batch.processors;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssChannelSubscriptionDTO;
 import com.rss.db.model.RssSubscriptionDTO;
+import com.rss.model.HttpRequestException;
 import com.rss.model.RssUpdate;
 import com.rss.utils.DislogLogger;
 import com.rss.clients.HttpClient;
@@ -48,6 +49,9 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
                     }
                 }
             }
+        } catch (HttpRequestException e) {
+            logger.error("Failed to parse http response for reddit. Code: " + e.getCode(), e);
+            return null;
         } catch (Exception e) {
             logger.error("Failed to parse http response from reddit", e);
             return null;
