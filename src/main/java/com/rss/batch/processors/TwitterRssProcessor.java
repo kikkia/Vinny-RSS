@@ -43,6 +43,13 @@ public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
             Instant posted = entry.getPublishedDate().toInstant();
             if (posted.isAfter(lastScan)) {
                 boolean rt = entry.getTitle().startsWith("RT by");
+                // Sometimes issues where the wrong user tweets come up with rss is happening
+                // This will ensure non RTs are from the user. (I suspect a nitter bug)
+                if (!rt && !entry.getLink().contains(rssSubscriptionDTO.getUrl().replace("@", ""))) {
+                    logger.error("Hit wrong subject for non RT update!");
+                    continue;
+                }
+
                 for (RssChannelSubscriptionDTO dto : subs) {
                     toUpdate.add(new RssUpdate(
                             rssSubscriptionDTO.getId(),
