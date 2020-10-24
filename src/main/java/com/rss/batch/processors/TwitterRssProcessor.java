@@ -42,10 +42,11 @@ public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
         for (SyndEntry entry : feed.getEntries()) {
             Instant posted = entry.getPublishedDate().toInstant();
             if (posted.isAfter(lastScan)) {
-                boolean rt = entry.getTitle().startsWith("RT by");
+                String subject = rssSubscriptionDTO.getUrl().replace("@", "");
+                boolean rt = entry.getTitle().startsWith("RT by @" + subject);
                 // Sometimes issues where the wrong user tweets come up with rss is happening
                 // This will ensure non RTs are from the user. (I suspect a nitter bug)
-                if (!rt && !entry.getLink().contains(rssSubscriptionDTO.getUrl().replace("@", ""))) {
+                if (!rt && !entry.getLink().contains(subject)) {
                     logger.error("Hit wrong subject for non RT update!");
                     continue;
                 }
@@ -56,7 +57,7 @@ public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
                             dto.getChannelId(),
                             entry.getLink().replace("nitter.net", "twitter.com"),
                             rssSubscriptionDTO.getProvider(),
-                            rt ? "**VINNY**RT@" + rssSubscriptionDTO.getUrl() : "@" + rssSubscriptionDTO.getUrl(),
+                            rt ? "**VINNY**RT@" + subject : "@" + subject,
                             rssSubscriptionDTO.getUrl()
                             ));
                 }
