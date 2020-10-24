@@ -41,14 +41,16 @@ public class ChanRssProcessor implements ItemProcessor<RssSubscriptionDTO, List<
             Instant posted = entry.getPublishedDate().toInstant();
             if (posted.isAfter(lastScan)) {
                 for (RssChannelSubscriptionDTO dto : subs) {
-                    toUpdate.add(new RssUpdate(
-                            rssSubscriptionDTO.getId(),
-                            dto.getChannelId(),
-                            entry.getLink(),
-                            rssSubscriptionDTO.getProvider(),
-                            rssSubscriptionDTO.getUrl(),
-                            "/" + rssSubscriptionDTO.getUrl() + "/"
-                    ));
+                    if (dto.getKeyword() == null || entry.getTitle().contains(dto.getKeyword())) {
+                        toUpdate.add(new RssUpdate(
+                                rssSubscriptionDTO.getId(),
+                                dto.getChannelId(),
+                                entry.getLink(),
+                                rssSubscriptionDTO.getProvider(),
+                                rssSubscriptionDTO.getUrl(),
+                                "/" + rssSubscriptionDTO.getUrl() + "/"
+                        ));
+                    }
                 }
             }
         }
