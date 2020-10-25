@@ -45,7 +45,7 @@ public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
             Instant posted = entry.getPublishedDate().toInstant();
             if (posted.isAfter(lastScan)) {
                 String subject = rssSubscriptionDTO.getUrl().replace("@", "");
-                boolean rt = entry.getTitle().startsWith("RT by @" + subject);
+                boolean rt = entry.getTitle().toUpperCase().startsWith("RT by @" + subject.toUpperCase());
                 // Sometimes issues where the wrong user tweets come up with rss is happening
                 // This will ensure non RTs are from the user. (I suspect a nitter bug)
                 if (!rt && Pattern.compile(Pattern.quote(subject), Pattern.CASE_INSENSITIVE).matcher(entry.getLink()).find()) {
