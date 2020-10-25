@@ -17,6 +17,7 @@ import java.net.URL;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, List<RssUpdate>> {
 
@@ -47,7 +48,7 @@ public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
                 boolean rt = entry.getTitle().startsWith("RT by @" + subject);
                 // Sometimes issues where the wrong user tweets come up with rss is happening
                 // This will ensure non RTs are from the user. (I suspect a nitter bug)
-                if (!rt && !entry.getLink().contains(subject)) {
+                if (!rt && Pattern.compile(Pattern.quote(subject), Pattern.CASE_INSENSITIVE).matcher(entry.getLink()).find()) {
                     try (MDC.MDCCloseable a = MDC.putCloseable("twitter subject", rssSubscriptionDTO.getUrl());
                             MDC.MDCCloseable b = MDC.putCloseable("actual subject", entry.getLink());
                             MDC.MDCCloseable c = MDC.putCloseable("title", entry.getTitle())){
