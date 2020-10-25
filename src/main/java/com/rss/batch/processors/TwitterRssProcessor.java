@@ -48,7 +48,7 @@ public class TwitterRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
                 boolean rt = entry.getTitle().toLowerCase().startsWith("rt by @" + subject.toLowerCase());
                 // Sometimes issues where the wrong user tweets come up with rss is happening
                 // This will ensure non RTs are from the user. (I suspect a nitter bug)
-                if (!rt && entry.getLink().toLowerCase().contains(subject.toLowerCase())) {
+                if (!rt && !entry.getLink().toLowerCase().contains(subject.toLowerCase())) {
                     try (MDC.MDCCloseable a = MDC.putCloseable("twitter subject", subject);
                             MDC.MDCCloseable b = MDC.putCloseable("actual subject", entry.getLink());
                             MDC.MDCCloseable c = MDC.putCloseable("title", entry.getTitle())){
