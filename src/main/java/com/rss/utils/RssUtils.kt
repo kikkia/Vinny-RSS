@@ -5,7 +5,8 @@ import com.rss.model.RssProvider
 class RssUtils {
     companion object {
         fun getTwitterUrl(user: String, nitPath: String): String {
-            return "$nitPath/$user/rss"
+            val cleanedUser = user.replace("@", "")
+            return "$nitPath/$cleanedUser/rss"
         }
 
         fun getRedditUrl(subreddit: String): String {
@@ -26,6 +27,10 @@ class RssUtils {
 
         fun getTwitchUrl(channelId: String) : String {
             return "https://api.twitch.tv/kraken/channels/$channelId/videos?broadcast_type=archive,highlight,upload&limit=5"
+        }
+
+        fun getSteamUrl(gameId: String) : String {
+            return "http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=$gameId&count=3&maxlength=300&format=json"
         }
 
         fun getMinIntervalForProvider(provider: RssProvider) : Long {
