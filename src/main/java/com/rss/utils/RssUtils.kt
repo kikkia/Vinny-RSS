@@ -42,5 +42,13 @@ class RssUtils {
                 else -> 60000
             }
         }
+
+        fun getBdoUrls() : Map<String, String> {
+            return mapOf(
+                    Pair("news",
+                        "https://community.blackdesertonline.com/index.php?forums/news-announcements.181/index.rss"),
+                    Pair("patch notes",
+                        "https://community.blackdesertonline.com/index.php?forums/patch-notes.5/index.rss"))
+        }
     }
 }

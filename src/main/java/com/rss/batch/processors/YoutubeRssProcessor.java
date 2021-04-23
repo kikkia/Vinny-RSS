@@ -49,6 +49,13 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
             ArrayList<RssUpdate> toUpdate = new ArrayList<>();
             for (SyndEntry entry : feed.getEntries()) {
                 Instant posted = entry.getPublishedDate().toInstant();
+
+                // Update display name
+                if (rssSubscriptionDTO.getDisplayName() == null) {
+                    rssSubscriptionDTO.setDisplayName(entry.getAuthor());
+                    repository.updateDisplayName(rssSubscriptionDTO.getId(), entry.getAuthor());
+                }
+
                 if (posted.isAfter(lastScan)) {
                     boolean live = isLive(entry.getLink());
                     String subject = live ? "**VINNY**Live" + rssSubscriptionDTO.getUrl() : rssSubscriptionDTO.getUrl();

@@ -44,7 +44,8 @@ public class RssSubscriptionRepository {
                             set.getString("subject"),
                             set.getInt("provider"),
                             Instant.ofEpochMilli(set.getLong("lastScanAttempt")),
-                            Instant.ofEpochMilli(set.getLong("lastScanComplete"))
+                            Instant.ofEpochMilli(set.getLong("lastScanComplete")),
+                            set.getString("display_name")
                     );
                 }
             }
@@ -101,6 +102,22 @@ public class RssSubscriptionRepository {
             }
         } catch (SQLException e) {
             logger.error("Failed to update lastScanComplete", e);
+            return false;
+        }
+        return true;
+    }
+
+    public boolean updateDisplayName(int id, String newDisplayName) {
+        String query = "UPDATE rss_subscription SET display_name = ? WHERE id = ?";
+        // Update the last scan attempt
+        try (Connection connection = dataSource.getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setString(1, newDisplayName);
+                statement.setInt(2, id);
+                statement.execute();
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to update display_name", e);
             return false;
         }
         return true;

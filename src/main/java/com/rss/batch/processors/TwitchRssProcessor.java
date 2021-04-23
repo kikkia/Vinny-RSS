@@ -40,9 +40,19 @@ public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
                     new Pair<>("Accept", "application/vnd.twitchtv.v5+json"));
             JSONObject response = client.getJsonResponseWithHeaders(url, headers);
             JSONArray videos = response.getJSONArray("videos");
+
             for (Object jsonObject : videos) {
                 if (jsonObject instanceof  JSONObject) {
                     JSONObject video = (JSONObject) jsonObject;
+
+                    // Update twitch displayname of the channel
+                    if (rssSubscriptionDTO.getDisplayName() == null) {
+                        String displayName = video.getJSONObject("channel").getString("display_name");
+                        rssSubscriptionDTO.setDisplayName(displayName);
+                        repository.updateDisplayName(rssSubscriptionDTO.getId(),
+                                displayName);
+                    }
+
                     if ("recording".equals(video.getString("status"))) {
                         Instant created = Instant.parse(video.getString("created_at"));
                         if (created.isAfter(lastScan)) {
