@@ -26,7 +26,7 @@ class RssUtils {
         }
 
         fun getTwitchUrl(channelId: String) : String {
-            return "https://api.twitch.tv/kraken/channels/$channelId/videos?broadcast_type=archive,highlight,upload&limit=5"
+            return "https://api.twitch.tv/helix/videos?user_id=$channelId&first=5"
         }
 
         fun getSteamUrl(gameId: String) : String {

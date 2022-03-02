@@ -61,7 +61,8 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
             MetricsService metricsService,
             AuthProperties authProperties,
             @Value("${nitter.path}") String nitterPath,
-            @Value("${twitch.clientId}") String twitchClientId) {
+            @Value("${twitch.clientId}") String twitchClientId,
+            @Value("${twitch.clientSecret}") String twitchSecret) {
         this.jobLauncher = getJobLauncher();
         this.stepBuilderFactory = stepBuilderFactory;
         this.repository = repository;
@@ -73,7 +74,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         this.chanRssProcessor = new ChanRssProcessor(repository);
         this.youtubeRssProcessor = new YoutubeRssProcessor(repository, httpClient, authProperties, metricsService);
         this.twitterRssProcessor = new TwitterRssProcessor(repository, nitterPath);
-        this.twitchRssProcessor = new TwitchRssProcessor(repository, twitchClientId, httpClient);
+        this.twitchRssProcessor = new TwitchRssProcessor(repository, twitchClientId, twitchSecret, httpClient);
         this.runIdIncrementer = new RunIdIncrementer();
     }
 

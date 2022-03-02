@@ -23,11 +23,18 @@ public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
     private RssSubscriptionRepository repository;
     private HttpClient client;
     private String clientId;
+    private String clientSecret;
+    private String oauthToken;
+    private String refreshToken;
+    private Long tokenExpiration;
 
-    public TwitchRssProcessor(RssSubscriptionRepository repository, String clientId, HttpClient client) {
+    public TwitchRssProcessor(RssSubscriptionRepository repository, String clientId, String clientSecret, HttpClient client) {
         this.clientId = clientId;
         this.client = client;
         this.repository = repository;
+        this.clientSecret = clientSecret;
+
+        getOauthToken();
     }
 
     @Override
@@ -36,10 +43,14 @@ public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
         Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
         JSONObject toUpdate = null;
         try {
+            if (System.currentTimeMillis() >= tokenExpiration) {
+                getOauthToken();
+            }
             List<Pair<String, String>> headers = Arrays.asList(new Pair<>("Client-ID", clientId),
+                    new Pair<>("Authorization", "Bearer " + oauthToken),
                     new Pair<>("Accept", "application/vnd.twitchtv.v5+json"));
             JSONObject response = client.getJsonResponseWithHeaders(url, headers);
-            JSONArray videos = response.getJSONArray("videos");
+            JSONArray videos = response.getJSONArray("data");
 
             for (Object jsonObject : videos) {
                 if (jsonObject instanceof  JSONObject) {
@@ -53,7 +64,7 @@ public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
                                 displayName);
                     }
 
-                    if ("recording".equals(video.getString("status"))) {
+                    if ("recording".equals(video.getString("type"))) {
                         Instant created = Instant.parse(video.getString("created_at"));
                         if (created.isAfter(lastScan)) {
                             toUpdate = video;
@@ -93,5 +104,12 @@ public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
             return null;
         }
         return updates.isEmpty() ? null : updates;
+    }
+
+    private void getOauthToken() {
+        String url = "https://id.twitch.tv/oauth2/token?client_id=" + clientId + "&client_secret=" + clientSecret + "&grant_type=client_credentials";
+        JSONObject response = client.postJsonResponse(url);
+        oauthToken = response.getString("access_token");
+        tokenExpiration = System.currentTimeMillis() + (response.getInt("expires_in") - 1) * 1000L;
     }
 }
