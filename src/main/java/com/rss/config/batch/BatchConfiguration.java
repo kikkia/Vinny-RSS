@@ -209,7 +209,8 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 1000)
+    // TODO: FIX
+    //@Scheduled(fixedRate = 1000)
     public void launchTwitchRssScan() throws Exception {
         getJobLauncher().run(
                 twitchJob(),
