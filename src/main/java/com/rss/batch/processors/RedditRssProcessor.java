@@ -15,6 +15,7 @@ import org.springframework.batch.item.ItemProcessor;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, List<RssUpdate>> {
 
@@ -36,6 +37,12 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
 
         try {
             JSONObject response = client.getJsonResponse(url);
+            if (response.has("reason") && Objects.equals(response.getString("reason"), "banned")) {
+                logger.info("Subreddit " + rssSubscriptionDTO.getUrl() + "has been banned, removing");
+                // Remove banned sub from scrape list
+                repository.delete(rssSubscriptionDTO.getId());
+                return null;
+            }
             JSONArray array = response.getJSONObject("data").getJSONArray("children");
 
             // Checking all posts in data

@@ -122,4 +122,22 @@ public class RssSubscriptionRepository {
         }
         return true;
     }
+
+    public void delete(int id) {
+        String deleteChannelSubsQuery = "DELETE FROM channel_rss_subscription WHERE rss_subscription_id = ?";
+        String deleteSubQuery = "DELETE FROM rss_subscription WHERE id = ?";
+
+        try (Connection connection = dataSource.getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement(deleteChannelSubsQuery)) {
+                statement.setInt(1, id);
+                statement.execute();
+            }
+            try (PreparedStatement statement = connection.prepareStatement(deleteSubQuery)) {
+                statement.setInt(1, id);
+                statement.execute();
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to delete subscription", e);
+        }
+    }
 }
