@@ -179,7 +179,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 5000)
     public void launchTwitterRssScan() throws Exception {
         getJobLauncher().run(
                 twitterRssJob(),
@@ -189,7 +189,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 2000)
     public void launchYoutubeRssScan() throws Exception {
         getJobLauncher().run(
                 youtubeRssJob(),

@@ -37,7 +37,7 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
         String url = RssUtils.Companion.getRedditUrl(rssSubscriptionDTO.getUrl());
         Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
         logger.info("Scanning subreddit " + rssSubscriptionDTO.getUrl());
-        logger.debug("Using loid: " + redditLOID);
+        logger.info("Using loid: " + redditLOID);
         ArrayList<JSONObject> toUpdate = new ArrayList<>();
         // TODO: Add support to scan rss endpoint to since that has a separate rate limit to double throughput
         try {
@@ -48,15 +48,16 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
                 repository.delete(rssSubscriptionDTO.getId());
                 return null;
             }
-            if (!response.getLoid().equals("")) {
-                this.redditLOID = response.getLoid();
-            }
             if (!response.getJson().has("data")) {
                 logger.warn("No data found in reddit response: " + response);
                 if (response.getJson().has("error")) {
                     if (response.getJson().getInt("error") == 429) {
                         logger.info("Too many requests, refreshing loid");
-                        redditLOID = "";
+                        if (redditLOID.isEmpty()) {
+                            redditLOID = response.getLoid();
+                        } else {
+                            redditLOID = "";
+                        }
                     }
                 }
             }
