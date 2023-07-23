@@ -43,6 +43,9 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
                 repository.delete(rssSubscriptionDTO.getId());
                 return null;
             }
+            if (!response.has("data")) {
+                logger.warn("No data found in reddit response: " + response);
+            }
             JSONArray array = response.getJSONObject("data").getJSONArray("children");
 
             // Checking all posts in data
