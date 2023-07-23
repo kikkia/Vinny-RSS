@@ -34,7 +34,7 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
         Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
 
         ArrayList<JSONObject> toUpdate = new ArrayList<>();
-
+        // TODO: Add support to scan rss endpoint to since that has a separate rate limit to double throughput
         try {
             JSONObject response = client.getJsonResponse(url);
             if (response.has("reason") && Objects.equals(response.getString("reason"), "banned")) {
@@ -61,7 +61,8 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
             }
         } catch (Exception e) {
             logger.error("Failed to parse http response from reddit", e);
-            return null;
+            // Throw to prevent spam of more retries
+            throw e;
         }
 
         ArrayList<RssUpdate> updates = new ArrayList<>();
