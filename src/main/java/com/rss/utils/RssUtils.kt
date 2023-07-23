@@ -35,10 +35,10 @@ class RssUtils {
 
         fun getMinIntervalForProvider(provider: RssProvider) : Long {
             return when (provider) {
-                RssProvider.CHAN -> 10000
-                RssProvider.TWITTER -> 10000
-                RssProvider.REDDIT -> 20000
-                RssProvider.TWITCH -> 10000
+                RssProvider.CHAN -> 20000
+                RssProvider.TWITTER -> 20000
+                RssProvider.REDDIT -> 60000
+                RssProvider.TWITCH -> 20000
                 else -> 60000
             }
         }
