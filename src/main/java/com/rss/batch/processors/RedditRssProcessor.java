@@ -50,7 +50,8 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
                 if (jsonObject instanceof  JSONObject) {
                     JSONObject post = ((JSONObject) jsonObject).getJSONObject("data");
                     Instant posted = Instant.ofEpochSecond(post.getLong("created_utc"));
-                    if (posted.isAfter(lastScan)) {
+                    // Is after last scan and less than 2 hours old
+                    if (posted.isAfter(lastScan) && Instant.now().minusSeconds(posted.getEpochSecond()).getEpochSecond() < 7200) {
                         toUpdate.add(post);
                     }
                 }
