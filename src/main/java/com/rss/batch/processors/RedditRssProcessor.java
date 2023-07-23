@@ -4,6 +4,7 @@ package com.rss.batch.processors;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssChannelSubscriptionDTO;
 import com.rss.db.model.RssSubscriptionDTO;
+import com.rss.model.RedditResponse;
 import com.rss.model.RssUpdate;
 import com.rss.utils.DislogLogger;
 import com.rss.clients.HttpClient;
@@ -23,30 +24,43 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
     private RssSubscriptionRepository repository;
     private HttpClient client;
 
+    private String redditLOID;
+
     public RedditRssProcessor(RssSubscriptionRepository repository, HttpClient client) {
         this.repository = repository;
         this.client = client;
+        this.redditLOID = "";
     }
 
     @Override
     public List<RssUpdate> process(RssSubscriptionDTO rssSubscriptionDTO) throws Exception {
         String url = RssUtils.Companion.getRedditUrl(rssSubscriptionDTO.getUrl());
         Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
-
+        logger.info("Scanning subreddit " + rssSubscriptionDTO.getUrl());
+        logger.debug("Using loid: " + redditLOID);
         ArrayList<JSONObject> toUpdate = new ArrayList<>();
         // TODO: Add support to scan rss endpoint to since that has a separate rate limit to double throughput
         try {
-            JSONObject response = client.getJsonResponse(url);
-            if (response.has("reason") && Objects.equals(response.getString("reason"), "banned")) {
+            RedditResponse response = client.getRedditJsonResponse(url, redditLOID);
+            if (response.getJson().has("reason") && Objects.equals(response.getJson().getString("reason"), "banned")) {
                 logger.info("Subreddit " + rssSubscriptionDTO.getUrl() + "has been banned, removing");
                 // Remove banned sub from scrape list
                 repository.delete(rssSubscriptionDTO.getId());
                 return null;
             }
-            if (!response.has("data")) {
-                logger.warn("No data found in reddit response: " + response);
+            if (!response.getLoid().equals("")) {
+                this.redditLOID = response.getLoid();
             }
-            JSONArray array = response.getJSONObject("data").getJSONArray("children");
+            if (!response.getJson().has("data")) {
+                logger.warn("No data found in reddit response: " + response);
+                if (response.getJson().has("error")) {
+                    if (response.getJson().getInt("error") == 429) {
+                        logger.info("Too many requests, refreshing loid");
+                        redditLOID = "";
+                    }
+                }
+            }
+            JSONArray array = response.getJson().getJSONObject("data").getJSONArray("children");
 
             // Checking all posts in data
             for (Object jsonObject : array) {
