@@ -5,7 +5,9 @@ import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssChannelSubscriptionDTO;
 import com.rss.db.model.RssSubscriptionDTO;
 import com.rss.model.RedditResponse;
+import com.rss.model.RssProvider;
 import com.rss.model.RssUpdate;
+import com.rss.service.MetricsService;
 import com.rss.utils.DislogLogger;
 import com.rss.clients.HttpClient;
 import com.rss.utils.RssUtils;
@@ -23,21 +25,23 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
     private DislogLogger logger = new DislogLogger(this.getClass());
     private RssSubscriptionRepository repository;
     private HttpClient client;
+    private MetricsService metricsService;
 
     private String redditLOID;
 
-    public RedditRssProcessor(RssSubscriptionRepository repository, HttpClient client) {
+    public RedditRssProcessor(RssSubscriptionRepository repository, HttpClient client, MetricsService service) {
         this.repository = repository;
         this.client = client;
         this.redditLOID = "";
+        this.metricsService = service;
     }
 
     @Override
     public List<RssUpdate> process(RssSubscriptionDTO rssSubscriptionDTO) throws Exception {
         String url = RssUtils.Companion.getRedditUrl(rssSubscriptionDTO.getUrl());
         Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
-        logger.info("Scanning subreddit " + rssSubscriptionDTO.getUrl());
-        logger.info("Using loid: " + redditLOID);
+        //logger.info("Scanning subreddit " + rssSubscriptionDTO.getUrl());
+        //logger.info("Using loid: " + redditLOID);
         ArrayList<JSONObject> toUpdate = new ArrayList<>();
         // TODO: Add support to scan rss endpoint to since that has a separate rate limit to double throughput
         try {
@@ -75,8 +79,9 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
                 }
             }
         } catch (Exception e) {
-            logger.error("Failed to parse http response from reddit", e);
+            logger.error("Failed to parse http response from reddit: " + rssSubscriptionDTO.getUrl(), e);
             // Throw to prevent spam of more retries
+            metricsService.markExecutionFailed(RssProvider.REDDIT);
             throw e;
         }
 

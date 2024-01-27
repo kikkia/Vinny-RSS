@@ -9,6 +9,7 @@ import com.rss.config.properties.AuthProperties;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssChannelSubscriptionDTO;
 import com.rss.db.model.RssSubscriptionDTO;
+import com.rss.model.RssProvider;
 import com.rss.model.RssUpdate;
 import com.rss.service.MetricsService;
 import com.rss.utils.DislogLogger;
@@ -83,6 +84,7 @@ public class YoutubeRssProcessor implements ItemProcessor<RssSubscriptionDTO, Li
             return toUpdate;
         } catch (Exception e) {
             logger.error("Failed to do YT rss scan", e);
+            metricsService.markExecutionFailed(RssProvider.YOUTUBE);
             return null;
         }
     }

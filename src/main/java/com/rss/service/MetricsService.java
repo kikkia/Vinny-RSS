@@ -25,4 +25,9 @@ public class MetricsService {
         String idTag = "id:" + dto.getId();
         client.incrementCounter("rss.update.ytlive");
     }
+
+    public void markExecutionFailed(RssProvider provider) {
+        String providerTag = "provider:" + provider.name();
+        client.incrementCounter("rss.update.updated.failed", providerTag);
+    }
 }

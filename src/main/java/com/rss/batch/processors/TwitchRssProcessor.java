@@ -4,7 +4,9 @@ import com.rss.clients.HttpClient;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssChannelSubscriptionDTO;
 import com.rss.db.model.RssSubscriptionDTO;
+import com.rss.model.RssProvider;
 import com.rss.model.RssUpdate;
+import com.rss.service.MetricsService;
 import com.rss.utils.DislogLogger;
 import com.rss.utils.RssUtils;
 import kotlin.Pair;
@@ -22,18 +24,19 @@ public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
     private DislogLogger logger = new DislogLogger(this.getClass());
     private RssSubscriptionRepository repository;
     private HttpClient client;
+    private MetricsService metricsService;
     private String clientId;
     private String clientSecret;
     private String oauthToken;
     private String refreshToken;
     private Long tokenExpiration;
 
-    public TwitchRssProcessor(RssSubscriptionRepository repository, String clientId, String clientSecret, HttpClient client) {
+    public TwitchRssProcessor(RssSubscriptionRepository repository, String clientId, String clientSecret, HttpClient client, MetricsService service) {
         this.clientId = clientId;
         this.client = client;
         this.repository = repository;
         this.clientSecret = clientSecret;
-
+        this.metricsService = service;
         getOauthToken();
     }
 
@@ -76,6 +79,7 @@ public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
             }
         } catch (Exception e) {
             logger.warn("Failed to fetch twitch feed for " + rssSubscriptionDTO.getUrl(), e);
+            metricsService.markExecutionFailed(RssProvider.TWITCH);
             e.printStackTrace();
             return null;
         }

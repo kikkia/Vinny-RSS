@@ -3,6 +3,7 @@ package com.rss.batch.processors;
 import com.rss.clients.HttpClient;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssSubscriptionDTO;
+import com.rss.model.RssProvider;
 import com.rss.model.RssUpdate;
 import com.rss.service.MetricsService;
 import com.rss.utils.DislogLogger;
@@ -42,6 +43,7 @@ public class SteamRssProcessor implements ItemProcessor<RssSubscriptionDTO, List
         //}
         catch (Exception e) {
             logger.error("Failed to get steam rss response", e);
+            metricsService.markExecutionFailed(RssProvider.STEAM);
             return null;
         }
         return null;
