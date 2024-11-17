@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import java.lang.Exception
 
-class DislogLogger(name: Class<*>) {
+class Logger(name: Class<*>) {
 
     private var logger: Logger = LoggerFactory.getLogger(name)
 
@@ -66,7 +66,7 @@ class DislogLogger(name: Class<*>) {
 
     private fun sendDisLog(level: LogLevel, message: String, throwable: Throwable?) {
         if (client == null)
-            return
+            client = SpringContext.getBean(DislogClient::class.java)
 
         val exception = if (throwable == null) null else Exception(throwable)
 

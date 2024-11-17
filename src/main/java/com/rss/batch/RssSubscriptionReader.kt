@@ -12,7 +12,13 @@ class RssSubscriptionReader(private val repository: RssSubscriptionRepository,
                             private val metricsService: MetricsService,
                             private val provider: RssProvider) : ItemReader<RssSubscriptionDTO?> {
     private val logger = DislogLogger(this.javaClass)
+    private var used = false
     override fun read(): RssSubscriptionDTO? {
+        // A hack to make each step correlate to one scan, before it would scan more than indended on each interval
+        if (used) {
+            return null
+        }
+
         val dto = repository.getNextSubscription(provider)
         if (dto == null) {
             // logger.info("No feed ready for sync")
@@ -22,6 +28,7 @@ class RssSubscriptionReader(private val repository: RssSubscriptionRepository,
                     Instant.now().toEpochMilli() - dto.lastScanAttempt.toEpochMilli(),
                     Instant.now().toEpochMilli() - dto.lastScanComplete.toEpochMilli())
         }
+        used = true
         return dto
     }
 }

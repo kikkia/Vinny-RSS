@@ -18,27 +18,38 @@ import org.springframework.stereotype.Component
         return JSONObject(getStringResponse(url))
     }
 
-    fun getRedditJsonResponse(url: String, loid: String) : RedditResponse {
+    fun getRedditJsonResponse(url: String, sessionTracker: String) : RedditResponse {
         val builder = Request.Builder()
                 .url(url)
 
-        if (loid.isNotBlank()) {
-            builder.addHeader("cookie", "loid=" + loid)
+        if (sessionTracker.isNotBlank()) {
+            builder.addHeader("cookie", "session_tracker=" + sessionTracker)
         }
 
         client.newCall(builder.build()).execute().use { response ->
-            var newLoid = ""
+            var newSessionTracker = ""
             val iter = response.headers.iterator()
+            var debug = ""
             while (iter.hasNext()) {
                 val header = iter.next()
                 if (header.first == "set-cookie") {
-                    if (header.second.startsWith("loid=")) {
-                        newLoid = header.second.split(";")[0].replace("loid=", "")
+                    if (header.second.startsWith("session_tracker=")) {
+                        newSessionTracker = header.second.split(";")[0].replace("session_tracker=", "")
                         break
                     }
                 }
+                if (header.first == "x-ratelimit-remaining") {
+                    debug += header.second + " "
+                } else if (header.first == "x-ratelimit-reset") {
+                    debug += header.second + " "
+                }
             }
-            return RedditResponse(JSONObject(response.body!!.string()), newLoid)
+            println(debug)
+            var json = JSONObject()
+            if (response.code == 200) {
+                json = JSONObject(response.body!!.string())
+            }
+            return RedditResponse(json, newSessionTracker, response.code)
         }
     }
 

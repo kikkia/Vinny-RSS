@@ -169,7 +169,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
-    @Scheduled(fixedRate = 1500)
+    @Scheduled(fixedRate = 6030)
     public void launchRedditRssScan() throws Exception {
         getJobLauncher().run(
                 redditRssJob(),
@@ -179,7 +179,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 5000)
+    //@Scheduled(fixedRate = 5000)
     public void launchTwitterRssScan() throws Exception {
         getJobLauncher().run(
                 twitterRssJob(),
@@ -189,7 +189,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 2000)
+    @Scheduled(fixedRate = 4000)
     public void launchYoutubeRssScan() throws Exception {
         getJobLauncher().run(
                 youtubeRssJob(),
@@ -199,7 +199,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 5000)
     public void launchChanRssScan() throws Exception {
         getJobLauncher().run(
                 chanJob(),
@@ -209,8 +209,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    // TODO: FIX
-    //@Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 4000)
     public void launchTwitchRssScan() throws Exception {
         getJobLauncher().run(
                 twitchJob(),

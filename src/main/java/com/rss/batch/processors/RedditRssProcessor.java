@@ -17,6 +17,7 @@ import org.springframework.batch.item.ItemProcessor;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -46,24 +47,28 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
         // TODO: Add support to scan rss endpoint to since that has a separate rate limit to double throughput
         try {
             RedditResponse response = client.getRedditJsonResponse(url, redditLOID);
-            if (response.getJson().has("reason") && Objects.equals(response.getJson().getString("reason"), "banned")) {
+            if (response.getJson().has("reason") && Objects.equals(response.getJson().getString("reason"), "banned") ) {
                 logger.info("Subreddit " + rssSubscriptionDTO.getUrl() + "has been banned, removing");
                 // Remove banned sub from scrape list
                 repository.delete(rssSubscriptionDTO.getId());
-                return null;
+                return Collections.emptyList();
             }
             if (!response.getJson().has("data")) {
-                logger.warn("No data found in reddit response: " + response);
-                if (response.getJson().has("error")) {
-                    if (response.getJson().getInt("error") == 429) {
-                        logger.info("Too many requests, refreshing loid");
-                        if (redditLOID.isEmpty()) {
-                            redditLOID = response.getLoid();
-                        } else {
-                            redditLOID = "";
-                        }
+                logger.warn("No data found in reddit response: " + response.getStatus());
+                if (response.getStatus() == 429) {
+                    logger.info("Too many requests, refreshing loid");
+                    if (redditLOID.isEmpty()) {
+                        redditLOID = response.getSessionTracker();
+                    } else {
+                        redditLOID = "";
                     }
                 }
+                if (response.getStatus() == 404) {
+                    logger.info("Subreddit " + rssSubscriptionDTO.getUrl() + "has been banned, removing");
+                    // Remove banned sub from scrape list
+                    repository.delete(rssSubscriptionDTO.getId());
+                }
+                return Collections.emptyList();
             }
             JSONArray array = response.getJson().getJSONObject("data").getJSONArray("children");
 
@@ -114,11 +119,11 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
         }
         // If empty do not update completed timestamp, this is due to slow updates of the consumed feeds.
         if (toUpdate.isEmpty()) {
-            return null;
+            return Collections.emptyList();
         }
         if (!repository.updateLastScanComplete(rssSubscriptionDTO.getId())) {
             logger.error("Failed to mark the last completed time, failing job");
-            return null;
+            return Collections.emptyList();
         }
         return updates;
     }
