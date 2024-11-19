@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, List<RssUpdate>> {
 
@@ -53,26 +54,26 @@ public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
                     new Pair<>("Authorization", "Bearer " + oauthToken),
                     new Pair<>("Accept", "application/vnd.twitchtv.v5+json"));
             JSONObject response = client.getJsonResponseWithHeaders(url, headers);
-            JSONArray videos = response.getJSONArray("data");
+            JSONArray streams = response.getJSONArray("data");
+            if (!streams.isEmpty()) {
+                for (Object jsonObject : streams) {
+                    if (jsonObject instanceof  JSONObject) {
+                        JSONObject stream = (JSONObject) jsonObject;
+                        if ((rssSubscriptionDTO.getUrl()).equals(stream.getString("user_id"))) {
+                            // Update twitch displayname of the channel
+                            if (!Objects.equals(rssSubscriptionDTO.getDisplayName(), stream.getString("user_name"))) {
+                                String displayName = stream.getString("user_name");
+                                rssSubscriptionDTO.setDisplayName(displayName);
+                                repository.updateDisplayName(rssSubscriptionDTO.getId(),
+                                        displayName);
+                            }
 
-            for (Object jsonObject : videos) {
-                if (jsonObject instanceof  JSONObject) {
-                    JSONObject video = (JSONObject) jsonObject;
-
-                    // Update twitch displayname of the channel
-                    if (rssSubscriptionDTO.getDisplayName() == null) {
-                        String displayName = video.getJSONObject("channel").getString("display_name");
-                        rssSubscriptionDTO.setDisplayName(displayName);
-                        repository.updateDisplayName(rssSubscriptionDTO.getId(),
-                                displayName);
-                    }
-
-                    if ("recording".equals(video.getString("type"))) {
-                        Instant created = Instant.parse(video.getString("created_at"));
-                        if (created.isAfter(lastScan)) {
-                            toUpdate = video;
-                            // We can break as twitch channels can only have one stream at a time
-                            break;
+                            Instant created = Instant.parse(stream.getString("started_at"));
+                            if (created.isAfter(lastScan)) {
+                                toUpdate = stream;
+                                // We can break as twitch channels can only have one stream at a time
+                                break;
+                            }
                         }
                     }
                 }
@@ -80,7 +81,6 @@ public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
         } catch (Exception e) {
             logger.warn("Failed to fetch twitch feed for " + rssSubscriptionDTO.getUrl(), e);
             metricsService.markExecutionFailed(RssProvider.TWITCH);
-            e.printStackTrace();
             return null;
         }
 
@@ -93,10 +93,10 @@ public class TwitchRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
         for (RssChannelSubscriptionDTO channel : subs) {
             updates.add(new RssUpdate(rssSubscriptionDTO.getId(),
                     channel.getChannelId(),
-                    toUpdate.getJSONObject("channel").getString("url"),
+                    "https://twitch.tv/" + rssSubscriptionDTO.getDisplayName(),
                     rssSubscriptionDTO.getProvider(),
                     rssSubscriptionDTO.getUrl(),
-                    toUpdate.getJSONObject("channel").getString("display_name")
+                    toUpdate.getString("user_name")
             ));
         }
         // If empty do not update completed timestamp, this is due to slow updates of the consumed feeds.

@@ -26,7 +26,11 @@ class RssUtils {
         }
 
         fun getTwitchUrl(channelId: String) : String {
-            return "https://api.twitch.tv/helix/videos?user_id=$channelId&first=5"
+            return "https://api.twitch.tv/helix/streams?user_id=$channelId"
+        }
+
+        fun getTwitchUrlUsername(username: String): String {
+            return "https://api.twitch.tv/helix/streams?user_login=$username"
         }
 
         fun getSteamUrl(gameId: String) : String {
