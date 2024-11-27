@@ -8,6 +8,7 @@ enum class RssProvider(val value: Int) {
     TWITCH(5),
     STEAM(6),
     BDO(7),
+    BLUESKY(8),
     OTHER(0);
 
     companion object {
@@ -20,6 +21,7 @@ enum class RssProvider(val value: Int) {
                 5 -> TWITCH
                 6 -> STEAM
                 7 -> BDO
+                8 -> BLUESKY
                 else -> OTHER
             }
         }
