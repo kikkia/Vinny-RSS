@@ -46,6 +46,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     private YoutubeRssProcessor youtubeRssProcessor;
     private ChanRssProcessor chanRssProcessor;
     private TwitchRssProcessor twitchRssProcessor;
+    private BlueSkyRssProcessor blueSkyRssProcessor;
     private RunIdIncrementer runIdIncrementer;
     private JobRepository jobRepository;
     private MetricsService metricsService;
@@ -75,6 +76,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         this.youtubeRssProcessor = new YoutubeRssProcessor(repository, httpClient, authProperties, metricsService);
         this.twitterRssProcessor = new TwitterRssProcessor(repository, nitterPath);
         this.twitchRssProcessor = new TwitchRssProcessor(repository, twitchClientId, twitchSecret, httpClient, metricsService);
+        this.blueSkyRssProcessor = new BlueSkyRssProcessor(repository, metricsService);
         this.runIdIncrementer = new RunIdIncrementer();
     }
 
@@ -124,6 +126,14 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
+    public Job blueSkyJob() {
+        return jobBuilderFactory.get("blueSkyRssJob")
+                .incrementer(runIdIncrementer)
+                .flow(blueSkyStep())
+                .end()
+                .build();
+    }
+
     public Step redditStep() {
         return stepBuilderFactory.get("redditStep")
                 .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
@@ -169,7 +179,16 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
-    @Scheduled(fixedRate = 6030)
+    public Step blueSkyStep() {
+        return stepBuilderFactory.get("blueSkyStep")
+                .<RssSubscriptionDTO, List<RssUpdate>>chunk(1)
+                .reader(reader(RssProvider.BLUESKY))
+                .processor(this.blueSkyRssProcessor)
+                .writer(writer())
+                .build();
+    }
+
+    //@Scheduled(fixedRate = 6030)
     public void launchRedditRssScan() throws Exception {
         getJobLauncher().run(
                 redditRssJob(),
@@ -189,7 +208,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 4000)
+    //@Scheduled(fixedRate = 4000)
     public void launchYoutubeRssScan() throws Exception {
         getJobLauncher().run(
                 youtubeRssJob(),
@@ -199,7 +218,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 5000)
+    //@Scheduled(fixedRate = 5000)
     public void launchChanRssScan() throws Exception {
         getJobLauncher().run(
                 chanJob(),
@@ -209,10 +228,20 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 4000)
+    //@Scheduled(fixedRate = 4000)
     public void launchTwitchRssScan() throws Exception {
         getJobLauncher().run(
                 twitchJob(),
+                new JobParametersBuilder()
+                        .addDate("date", new Date())
+                        .toJobParameters()
+        );
+    }
+
+    @Scheduled(fixedRate = 4000)
+    public void launchBlueSkyRssScan() throws Exception {
+        getJobLauncher().run(
+                blueSkyJob(),
                 new JobParametersBuilder()
                         .addDate("date", new Date())
                         .toJobParameters()
