@@ -9,6 +9,10 @@ class RssUtils {
             return "$nitPath/$cleanedUser/rss"
         }
 
+        fun getBlueSkyUrl(user: String) : String {
+            return "https://bsky.app/profile/$user/rss"
+        }
+
         fun getRedditUrl(subreddit: String): String {
             return "https://old.reddit.com/r/$subreddit/new/.json"
         }
@@ -43,7 +47,8 @@ class RssUtils {
                 RssProvider.TWITTER -> 20000
                 RssProvider.REDDIT -> 60000
                 RssProvider.TWITCH -> 20000
-                else -> 60000
+                RssProvider.BLUESKY -> 65000
+                else -> 61000
             }
         }
 
