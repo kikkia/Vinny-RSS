@@ -1,6 +1,5 @@
 package com.rss.clients
 
-import com.rss.model.RedditResponse
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -16,41 +15,6 @@ import org.springframework.stereotype.Component
 
     fun getJsonResponse(url: String) : JSONObject {
         return JSONObject(getStringResponse(url))
-    }
-
-    fun getRedditJsonResponse(url: String, sessionTracker: String) : RedditResponse {
-        val builder = Request.Builder()
-                .url(url)
-
-        if (sessionTracker.isNotBlank()) {
-            builder.addHeader("cookie", "session_tracker=" + sessionTracker)
-        }
-
-        client.newCall(builder.build()).execute().use { response ->
-            var newSessionTracker = ""
-            val iter = response.headers.iterator()
-            var debug = ""
-            while (iter.hasNext()) {
-                val header = iter.next()
-                if (header.first == "set-cookie") {
-                    if (header.second.startsWith("session_tracker=")) {
-                        newSessionTracker = header.second.split(";")[0].replace("session_tracker=", "")
-                        break
-                    }
-                }
-                if (header.first == "x-ratelimit-remaining") {
-                    debug += header.second + " "
-                } else if (header.first == "x-ratelimit-reset") {
-                    debug += header.second + " "
-                }
-            }
-            println(debug)
-            var json = JSONObject()
-            if (response.code == 200) {
-                json = JSONObject(response.body!!.string())
-            }
-            return RedditResponse(json, newSessionTracker, response.code)
-        }
     }
 
     fun postJsonResponse(url: String) : JSONObject {

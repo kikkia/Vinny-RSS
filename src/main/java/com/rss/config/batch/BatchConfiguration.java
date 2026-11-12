@@ -3,6 +3,7 @@ package com.rss.config.batch;
 import com.rss.batch.*;
 import com.rss.batch.processors.*;
 import com.rss.clients.MessagingClient;
+import com.rss.clients.RedditClient;
 import com.rss.config.properties.AuthProperties;
 import com.rss.db.dao.RssSubscriptionRepository;
 import com.rss.db.model.RssSubscriptionDTO;
@@ -58,6 +59,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
             StepBuilderFactory stepBuilderFactory,
             RssSubscriptionRepository repository,
             HttpClient httpClient,
+            RedditClient redditClient,
             MessagingClient messagingClient,
             MetricsService metricsService,
             AuthProperties authProperties,
@@ -71,7 +73,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         this.httpClient = httpClient;
         this.messagingClient = messagingClient;
         this.metricsService = metricsService;
-        this.redditRssProcessor = new RedditRssProcessor(repository, httpClient, metricsService);
+        this.redditRssProcessor = new RedditRssProcessor(repository, redditClient, metricsService);
         this.chanRssProcessor = new ChanRssProcessor(repository);
         this.youtubeRssProcessor = new YoutubeRssProcessor(repository, httpClient, authProperties, metricsService);
         this.twitterRssProcessor = new TwitterRssProcessor(repository, nitterPath);
@@ -188,7 +190,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
                 .build();
     }
 
-    @Scheduled(fixedRate = 6030)
+    @Scheduled(fixedRate = 2000)
     public void launchRedditRssScan() throws Exception {
         getJobLauncher().run(
                 redditRssJob(),

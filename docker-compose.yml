@@ -6,3 +6,6 @@ services:
     network_mode: host
     environment:
       - DD_SERVICE=vinny-rss
+      - REDDIT_CLIENTID
+      - REDDIT_USERAGENT
+      - REDDIT_DEVICEID

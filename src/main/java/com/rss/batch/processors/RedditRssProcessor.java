@@ -9,8 +9,7 @@ import com.rss.model.RssProvider;
 import com.rss.model.RssUpdate;
 import com.rss.service.MetricsService;
 import com.rss.utils.DislogLogger;
-import com.rss.clients.HttpClient;
-import com.rss.utils.RssUtils;
+import com.rss.clients.RedditClient;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.batch.item.ItemProcessor;
@@ -25,28 +24,21 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
 
     private DislogLogger logger = new DislogLogger(this.getClass());
     private RssSubscriptionRepository repository;
-    private HttpClient client;
+    private RedditClient client;
     private MetricsService metricsService;
 
-    private String redditLOID;
-
-    public RedditRssProcessor(RssSubscriptionRepository repository, HttpClient client, MetricsService service) {
+    public RedditRssProcessor(RssSubscriptionRepository repository, RedditClient client, MetricsService service) {
         this.repository = repository;
         this.client = client;
-        this.redditLOID = "";
         this.metricsService = service;
     }
 
     @Override
     public List<RssUpdate> process(RssSubscriptionDTO rssSubscriptionDTO) throws Exception {
-        String url = RssUtils.Companion.getRedditUrl(rssSubscriptionDTO.getUrl());
         Instant lastScan = rssSubscriptionDTO.getLastScanComplete();
-        //logger.info("Scanning subreddit " + rssSubscriptionDTO.getUrl());
-        //logger.info("Using loid: " + redditLOID);
         ArrayList<JSONObject> toUpdate = new ArrayList<>();
-        // TODO: Add support to scan rss endpoint to since that has a separate rate limit to double throughput
         try {
-            RedditResponse response = client.getRedditJsonResponse(url, redditLOID);
+            RedditResponse response = client.getNewPosts(rssSubscriptionDTO.getUrl());
             if (response.getJson().has("reason") && Objects.equals(response.getJson().getString("reason"), "banned") ) {
                 logger.info("Subreddit " + rssSubscriptionDTO.getUrl() + "has been banned, removing");
                 // Remove banned sub from scrape list
@@ -55,14 +47,6 @@ public class RedditRssProcessor implements ItemProcessor<RssSubscriptionDTO, Lis
             }
             if (!response.getJson().has("data")) {
                 logger.warn("No data found in reddit response: " + response.getStatus());
-                if (response.getStatus() == 429) {
-                    logger.info("Too many requests, refreshing loid");
-                    if (redditLOID.isEmpty()) {
-                        redditLOID = response.getSessionTracker();
-                    } else {
-                        redditLOID = "";
-                    }
-                }
                 if (response.getStatus() == 404) {
                     logger.info("Subreddit " + rssSubscriptionDTO.getUrl() + "has been banned, removing");
                     // Remove banned sub from scrape list

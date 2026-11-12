@@ -1,6 +1,7 @@
 package com.rss.utils
 
 import com.rss.model.RssProvider
+import okhttp3.HttpUrl
 
 class RssUtils {
     companion object {
@@ -14,7 +15,15 @@ class RssUtils {
         }
 
         fun getRedditUrl(subreddit: String): String {
-            return "https://old.reddit.com/r/$subreddit/new/.json"
+            return HttpUrl.Builder()
+                .scheme("https")
+                .host("oauth.reddit.com")
+                .addPathSegment("r")
+                .addPathSegment(subreddit)
+                .addPathSegment("new")
+                .addQueryParameter("raw_json", "1")
+                .build()
+                .toString()
         }
 
         fun getYoutubeUrl(userId: String): String {

@@ -18,6 +18,9 @@ public class UserAgentInterceptor implements Interceptor {
     @Override
     public Response intercept(Interceptor.Chain chain) throws IOException {
         Request originalRequest = chain.request();
+        if (originalRequest.header("User-Agent") != null) {
+            return chain.proceed(originalRequest);
+        }
         Request requestWithUserAgent = originalRequest.newBuilder()
                 .header("User-Agent", userAgent)
                 .build();
