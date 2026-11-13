@@ -34,8 +34,9 @@ class RssUtils {
             return "https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=$videoId&key=$key"
         }
 
-        fun get4ChanUrl(board: String) : String {
-            return "https://boards.4chan.org/$board/index.rss"
+        fun get4ChanCatalogUrl(board: String) : String {
+            require(board.matches(Regex("[a-z0-9]+"))) { "Invalid 4chan board name" }
+            return "https://a.4cdn.org/$board/catalog.json"
         }
 
         fun getTwitchUrl(channelId: String) : String {

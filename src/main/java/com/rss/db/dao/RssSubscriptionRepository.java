@@ -91,12 +91,15 @@ public class RssSubscriptionRepository {
     }
 
     public boolean updateLastScanComplete(int id) {
+        return updateLastScanComplete(id, Instant.now());
+    }
+
+    public boolean updateLastScanComplete(int id, Instant completedAt) {
         String query = "UPDATE rss_subscription SET lastScanComplete = ? WHERE id = ?";
 
-        // Update the last scan attempt
         try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(query)) {
-                statement.setLong(1, System.currentTimeMillis());
+                statement.setLong(1, completedAt.toEpochMilli());
                 statement.setInt(2, id);
                 statement.execute();
             }

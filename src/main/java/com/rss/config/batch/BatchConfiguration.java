@@ -2,6 +2,7 @@ package com.rss.config.batch;
 
 import com.rss.batch.*;
 import com.rss.batch.processors.*;
+import com.rss.clients.ChanClient;
 import com.rss.clients.MessagingClient;
 import com.rss.clients.RedditClient;
 import com.rss.config.properties.AuthProperties;
@@ -60,6 +61,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
             RssSubscriptionRepository repository,
             HttpClient httpClient,
             RedditClient redditClient,
+            ChanClient chanClient,
             MessagingClient messagingClient,
             MetricsService metricsService,
             AuthProperties authProperties,
@@ -74,7 +76,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         this.messagingClient = messagingClient;
         this.metricsService = metricsService;
         this.redditRssProcessor = new RedditRssProcessor(repository, redditClient, metricsService);
-        this.chanRssProcessor = new ChanRssProcessor(repository);
+        this.chanRssProcessor = new ChanRssProcessor(repository, chanClient, metricsService);
         this.youtubeRssProcessor = new YoutubeRssProcessor(repository, httpClient, authProperties, metricsService);
         this.twitterRssProcessor = new TwitterRssProcessor(repository, nitterPath);
         this.twitchRssProcessor = new TwitchRssProcessor(repository, twitchClientId, twitchSecret, httpClient, metricsService);
@@ -220,7 +222,7 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
         );
     }
 
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedDelay = ChanClient.SCAN_INTERVAL_MILLIS)
     public void launchChanRssScan() throws Exception {
         getJobLauncher().run(
                 chanJob(),
